@@ -1,0 +1,179 @@
+/* ── Two-column layout ─────────────────────────────────────── */
+.sessionLayout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+/* ── Left: QR panel ────────────────────────────────────────── */
+.qrPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Timer card */
+.timerCard {
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+.timerLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--space-2);
+}
+
+.timerDisplay {
+  font-size: 48px;
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.04em;
+  color: var(--color-primary);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.timerDanger {
+  color: var(--color-error);
+  animation: pulse 1s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+/* QR card */
+.qrCard {
+  position: relative;
+  overflow: visible;
+}
+
+.qrImage {
+  border-radius: var(--radius-md);
+  display: block;
+}
+
+.qrExpired {
+  filter: grayscale(100%) opacity(0.3);
+}
+
+.qrPlaceholder {
+  width: 240px;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-md);
+}
+
+.qrExpiredOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+/* Attend URL */
+.attendUrlCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.attendUrl {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  word-break: break-all;
+  font-family: monospace;
+}
+
+/* ── Right: Attendee panel ─────────────────────────────────── */
+.attendeePanel {
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  min-height: 400px;
+}
+
+.attendeeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+}
+
+/* SSE status indicator */
+.sseIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+}
+
+.sseConnected {
+  color: var(--color-success);
+  background-color: var(--color-success-light);
+}
+
+.sseDisconnected {
+  color: var(--color-warning);
+  background-color: var(--color-warning-light);
+}
+
+/* Attendee row animation */
+.attendeeRow {
+  animation: slideInLeft 0.25s ease forwards;
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .sessionLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .qrPanel {
+    /* On mobile: QR and timer side by side if room */
+    max-width: 100%;
+  }
+
+  .qrImage {
+    width: 200px;
+    height: 200px;
+  }
+
+  .qrPlaceholder {
+    width: 200px;
+    height: 200px;
+  }
+}
