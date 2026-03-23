@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  LECTURER
+  STUDENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum SessionStatus {
+  ACTIVE
+  CLOSED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  role         Role
+  fullName     String
+  email        String   @unique
+  passwordHash String
+  department   String?
+  matricNumber String?  @unique
+  gender       Gender?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  courses            Course[]
+  sessions           Session[]
+  attendances        Attendance[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  lecturerId  String
+  courseCode  String
+  courseTitle String
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lecturer  User      @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  sessions  Session[]
+
+  @@unique([lecturerId, courseCode])
+}
+
+model Session {
+  id               String        @id @default(uuid())
+  courseId         String
+  lecturerId       String
+  latitude         Decimal       @db.Decimal(10, 7)
+  longitude        Decimal       @db.Decimal(10, 7)
+  geofenceRadiusM  Int           @default(50)
+  timeLimitMinutes Int
+  qrPayload        String        @unique
+  status           SessionStatus @default(ACTIVE)
+  createdAt        DateTime      @default(now())
+  expiresAt        DateTime
+  closedAt         DateTime?
+
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lecturer    User         @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  attendances Attendance[]
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  sessionId String
+  studentId String
+  latitude  Decimal  @db.Decimal(10, 7)
+  longitude Decimal  @db.Decimal(10, 7)
+  distanceM Decimal  @db.Decimal(8, 2)
+  signedAt  DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, studentId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

@@ -16,11 +16,11 @@
 
 ## Key Features
 
-- 📍 **Location-verified** — GPS geofencing ensures only present students sign in
-- ⚡ **One-scan simple** — students tap once; name and matric auto-fill
-- ⏱️ **Time-bound sessions** — auto-close after the lecturer's set duration
-- 📊 **Course analytics** — per-session records, cumulative stats, CSV export
-- 🛠️ **Zero infrastructure** — no beacons, no hardware, just phones
+- **Location-verified** — GPS geofencing ensures only present students sign in
+- **One-scan simple** — students tap once; name and matric auto-fill
+- **Time-bound sessions** — auto-close after the lecturer's set duration
+- **Course analytics** — per-session records, cumulative stats, CSV export
+- **Zero infrastructure** — no beacons, no hardware, just phones
 
 ## Tech Principles
 
@@ -30,7 +30,7 @@
 
 ## Project Status
 
-🚧 **Pre-development** — product specification and architecture in progress.
+**Pre-development** — product specification and architecture in progress.
 
 ## License
 

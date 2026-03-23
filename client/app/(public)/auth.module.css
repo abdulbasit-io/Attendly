@@ -1,0 +1,315 @@
+/* ============================================================
+   AUTH PAGES — Login, Register, Forgot/Reset Password
+   ============================================================ */
+
+.page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background-color: var(--color-bg);
+}
+
+/* ── Left panel (branding) ─────────────────────────────────── */
+.panel {
+  background-color: var(--color-primary);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-10);
+  position: relative;
+  overflow: hidden;
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 320px;
+  height: 320px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 50%;
+}
+
+.panel::after {
+  content: '';
+  position: absolute;
+  bottom: -60px;
+  left: -60px;
+  width: 240px;
+  height: 240px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+}
+
+.panelLogo {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: white;
+  letter-spacing: -0.02em;
+  z-index: 1;
+}
+
+.panelContent {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.panelHeading {
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: var(--font-weight-bold);
+  color: white;
+  line-height: var(--line-height-tight);
+  letter-spacing: -0.02em;
+}
+
+.panelSubtitle {
+  font-size: var(--font-size-base);
+  color: rgba(255, 255, 255, 0.75);
+  line-height: var(--line-height-relaxed);
+  max-width: 340px;
+}
+
+.panelSteps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.panelStep {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.panelStepDot {
+  width: 8px;
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.panelStepText {
+  font-size: var(--font-size-sm);
+  color: rgba(255, 255, 255, 0.75);
+  line-height: var(--line-height-normal);
+}
+
+.panelFooter {
+  font-size: var(--font-size-xs);
+  color: rgba(255, 255, 255, 0.45);
+  z-index: 1;
+}
+
+/* ── Right panel (form) ────────────────────────────────────── */
+.formPanel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-10);
+  overflow-y: auto;
+}
+
+.formInner {
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+}
+
+.formHeader {
+  margin-bottom: var(--space-8);
+}
+
+.formTitle {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-2);
+}
+
+.formSubtitle {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+.formSubtitle a {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
+.formSubtitle a:hover {
+  text-decoration: underline;
+}
+
+/* Form body */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.formError {
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-error-light);
+  color: var(--color-error);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  border: 1px solid rgba(198, 40, 40, 0.2);
+}
+
+.formSubmit {
+  margin-top: var(--space-2);
+}
+
+/* Footer links below form */
+.formFooter {
+  text-align: center;
+  margin-top: var(--space-6);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.formFooter a {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-medium);
+}
+.formFooter a:hover {
+  text-decoration: underline;
+}
+
+/* Role switcher (register pages) */
+.roleSwitcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.roleOption {
+  padding: var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.roleOption:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+.roleOption.active {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+}
+
+.roleOptionTitle {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.roleOptionDesc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* Password visibility toggle */
+.inputWithToggle {
+  position: relative;
+}
+
+.inputWithToggle input {
+  padding-right: 44px;
+}
+
+.toggleBtn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 44px;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+.toggleBtn:hover {
+  color: var(--color-text-secondary);
+}
+
+/* Divider */
+.orDivider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-2) 0;
+}
+.orDivider::before,
+.orDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+.orDividerText {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    display: none;
+  }
+
+  .formPanel {
+    padding: var(--space-8) var(--space-5);
+    justify-content: flex-start;
+  }
+
+  .formInner {
+    max-width: 100%;
+  }
+
+  .formHeader {
+    margin-bottom: var(--space-6);
+  }
+
+  /* Show logo on mobile since panel is hidden */
+  .formHeader::before {
+    content: 'Attendly';
+    display: block;
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    margin-bottom: var(--space-5);
+  }
+
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}
