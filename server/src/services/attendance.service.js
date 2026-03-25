@@ -18,6 +18,18 @@ async function sign(studentId, data) {
     throw err;
   }
 
+  if (session.level !== null) {
+    const student = await prisma.user.findUnique({
+      where: { id: studentId },
+      select: { level: true },
+    });
+    if (student?.level !== session.level) {
+      const err = new Error(`This session is for ${session.level}L students only`);
+      err.status = 403;
+      throw err;
+    }
+  }
+
   const distance = haversineDistance(
     parseFloat(session.latitude),
     parseFloat(session.longitude),

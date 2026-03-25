@@ -3,7 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Clock, Shield, AlertCircle, Loader } from 'lucide-react';
+import { MapPin, Clock, Shield, AlertCircle, Loader, GraduationCap } from 'lucide-react';
 import { useCourse } from '@/lib/hooks';
 import { getCurrentPosition, GeoPosition } from '@/lib/geo';
 import { api, ApiError } from '@/lib/api';
@@ -27,6 +27,7 @@ function NewSessionContent() {
   const [timeLimit, setTimeLimit] = useState(30);
   const [customTime, setCustomTime] = useState('');
   const [geofenceRadius, setGeofenceRadius] = useState(50);
+  const [sessionLevel, setSessionLevel] = useState('');
   const [geoState, setGeoState] = useState<'idle' | 'capturing' | 'captured' | 'error'>('idle');
   const [position, setPosition] = useState<GeoPosition | null>(null);
   const [geoError, setGeoError] = useState('');
@@ -59,6 +60,7 @@ function NewSessionContent() {
         latitude: position.latitude,
         longitude: position.longitude,
         geofenceRadiusM: geofenceRadius,
+        ...(sessionLevel ? { level: parseInt(sessionLevel, 10) } : {}),
       });
       router.push(`/lecturer/sessions/${data.session.id}`);
     } catch (err) {
@@ -241,6 +243,40 @@ function NewSessionContent() {
             <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
               Students more than <strong>{geofenceRadius}m</strong> from your location will be rejected.
             </p>
+          </div>
+        </div>
+
+        {/* Step 4 — Level restriction */}
+        <div className="card">
+          <div className="card-header">
+            <div className={styles.stepHeader}>
+              <div className={styles.stepNum}>4</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <GraduationCap size={16} color="var(--color-text-secondary)" />
+                <span style={{ fontWeight: 'var(--font-weight-semibold)' }}>Level Restriction</span>
+              </div>
+            </div>
+          </div>
+          <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+              Restrict this session to a specific level. Leave blank to allow all levels.
+            </p>
+            <div className="input-group" style={{ maxWidth: 220 }}>
+              <label className="input-label">Student level</label>
+              <select
+                className="select"
+                value={sessionLevel}
+                onChange={(e) => setSessionLevel(e.target.value)}
+              >
+                <option value="">All levels</option>
+                <option value="100">100L</option>
+                <option value="200">200L</option>
+                <option value="300">300L</option>
+                <option value="400">400L</option>
+                <option value="500">500L</option>
+                <option value="600">600L</option>
+              </select>
+            </div>
           </div>
         </div>
 

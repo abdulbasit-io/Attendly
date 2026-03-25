@@ -93,11 +93,18 @@
 .attendUrlCard {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+}
+
+.copyBtn {
+  padding: 2px var(--space-2);
+  height: auto;
+  font-size: var(--font-size-xs);
+  gap: var(--space-1);
 }
 
 .attendUrl {

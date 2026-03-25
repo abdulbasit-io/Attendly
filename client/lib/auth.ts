@@ -8,6 +8,7 @@ export type User = {
   department?: string;
   matricNumber?: string;
   gender?: 'MALE' | 'FEMALE';
+  level?: number;
   createdAt: string;
 };
 

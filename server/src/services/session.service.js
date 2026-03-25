@@ -4,7 +4,7 @@ const { generateSessionQR } = require('../utils/qrGenerator');
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
 async function create(lecturerId, data) {
-  const { courseId, timeLimitMinutes, latitude, longitude, geofenceRadiusM = 50 } = data;
+  const { courseId, timeLimitMinutes, latitude, longitude, geofenceRadiusM = 50, level } = data;
 
   // Verify course belongs to this lecturer
   const course = await prisma.course.findFirst({ where: { id: courseId, lecturerId } });
@@ -24,6 +24,7 @@ async function create(lecturerId, data) {
       longitude,
       geofenceRadiusM,
       timeLimitMinutes,
+      level: level ? parseInt(level, 10) : null,
       qrPayload: `session_${Date.now()}`,
       expiresAt,
     },
@@ -129,6 +130,7 @@ async function getInfo(id) {
     status: session.status,
     expiresAt: session.expiresAt,
     geofenceRadiusM: session.geofenceRadiusM,
+    level: session.level,
   };
 }
 

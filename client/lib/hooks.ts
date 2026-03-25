@@ -67,6 +67,7 @@ export type Session = {
   longitude: number;
   geofenceRadiusM: number;
   timeLimitMinutes: number;
+  level: number | null;
   qrPayload: string;
   status: 'ACTIVE' | 'CLOSED';
   createdAt: string;

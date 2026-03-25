@@ -11,7 +11,7 @@ function sanitizeUser(user) {
 }
 
 async function register(data) {
-  const { role, fullName, email, password, department, matricNumber, gender } = data;
+  const { role, fullName, email, password, department, matricNumber, gender, level } = data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -40,6 +40,7 @@ async function register(data) {
       department: department || null,
       matricNumber: matricNumber || null,
       gender: gender || null,
+      level: level ? parseInt(level, 10) : null,
     },
   });
 
@@ -145,13 +146,14 @@ async function getUser(id) {
 }
 
 async function updateProfile(id, data) {
-  const { fullName, department, gender } = data;
+  const { fullName, department, gender, level } = data;
   const user = await prisma.user.update({
     where: { id },
     data: {
       ...(fullName && { fullName }),
       ...(department && { department }),
       ...(gender && { gender }),
+      ...(level !== undefined && { level: level ? parseInt(level, 10) : null }),
     },
   });
   return sanitizeUser(user);

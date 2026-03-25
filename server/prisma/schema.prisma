@@ -31,6 +31,7 @@ model User {
   department   String?
   matricNumber String?  @unique
   gender       Gender?
+  level        Int?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -63,6 +64,7 @@ model Session {
   longitude        Decimal       @db.Decimal(10, 7)
   geofenceRadiusM  Int           @default(50)
   timeLimitMinutes Int
+  level            Int?
   qrPayload        String        @unique
   status           SessionStatus @default(ACTIVE)
   createdAt        DateTime      @default(now())

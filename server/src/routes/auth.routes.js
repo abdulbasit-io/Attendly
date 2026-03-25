@@ -21,6 +21,7 @@ router.post('/register',
     body('department').if(body('role').equals('STUDENT')).notEmpty(),
     body('matricNumber').if(body('role').equals('STUDENT')).notEmpty(),
     body('gender').if(body('role').equals('STUDENT')).isIn(['MALE', 'FEMALE']),
+    body('level').if(body('role').equals('STUDENT')).isInt({ min: 100, max: 900 }),
   ],
   authController.register
 );

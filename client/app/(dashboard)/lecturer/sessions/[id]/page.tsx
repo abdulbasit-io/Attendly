@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Share2, Download, StopCircle, Users, Clock,
-  CheckCircle, Wifi, WifiOff, FileDown, MapPin, Timer,
+  CheckCircle, Wifi, WifiOff, FileDown, MapPin, Timer, Copy, Check,
 } from 'lucide-react';
 import { useSession, Attendee } from '@/lib/hooks';
 import { api, ApiError } from '@/lib/api';
@@ -129,7 +129,7 @@ function exportSessionCSV(attendees: Attendee[], courseCode: string, sessionDate
 
 // ── Session summary card (shown for closed sessions) ──────────
 function SessionSummaryCard({ session, attendeeCount }: {
-  session: { createdAt: string; closedAt?: string | null; expiresAt: string; timeLimitMinutes: number; geofenceRadiusM: number };
+  session: { createdAt: string; closedAt?: string | null; expiresAt: string; timeLimitMinutes: number; geofenceRadiusM: number; level: number | null };
   attendeeCount: number;
 }) {
   const opened = new Date(session.createdAt);
@@ -171,6 +171,14 @@ function SessionSummaryCard({ session, attendeeCount }: {
           </span>
           <span style={{ fontWeight: 'var(--font-weight-medium)' }}>{session.geofenceRadiusM}m radius</span>
         </div>
+        {session.level && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-sm)' }}>
+            <span style={{ color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+              <Users size={13} /> Level
+            </span>
+            <span className="badge badge-blue" style={{ fontSize: 'var(--font-size-xs)' }}>{session.level}L</span>
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-sm)' }}>
           <span style={{ color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
             <Users size={13} /> Attendees
@@ -271,6 +279,7 @@ export default function SessionDetailPage() {
   const [ending, setEnding] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
   const [shareError, setShareError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const courseTitle = session?.course?.courseTitle ?? 'Course';
   const courseCode = session?.course?.courseCode ?? '';
@@ -336,12 +345,15 @@ export default function SessionDetailPage() {
       {/* Header */}
       <div className="page-header">
         <div className="page-header-left">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
             <h1 className="page-title">{courseTitle}</h1>
             <span className={`badge ${isActive ? 'badge-green' : 'badge-gray'}`}>
               {isActive ? <CheckCircle size={10} /> : null}
               {isActive ? 'Live' : 'Closed'}
             </span>
+            {session.level && (
+              <span className="badge badge-blue">{session.level}L</span>
+            )}
           </div>
           <p className="page-subtitle">
             {new Date(session.createdAt).toLocaleDateString('en-NG', {
@@ -432,9 +444,24 @@ export default function SessionDetailPage() {
           {/* Attend URL */}
           {attendUrl && (
             <div className={styles.attendUrlCard}>
-              <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-                Direct link:
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+                  Direct link
+                </span>
+                <button
+                  className={`btn btn-ghost btn-sm ${styles.copyBtn}`}
+                  onClick={() => {
+                    navigator.clipboard.writeText(attendUrl).then(() => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    });
+                  }}
+                  aria-label="Copy link"
+                >
+                  {copied ? <Check size={13} /> : <Copy size={13} />}
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
               <code className={styles.attendUrl}>{attendUrl}</code>
             </div>
           )}

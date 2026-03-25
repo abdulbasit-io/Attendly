@@ -13,6 +13,7 @@ router.post('/',
     body('latitude').isFloat({ min: -90, max: 90 }),
     body('longitude').isFloat({ min: -180, max: 180 }),
     body('geofenceRadiusM').optional().isInt({ min: 10, max: 500 }),
+    body('level').optional().isInt({ min: 100, max: 900 }),
   ],
   sessionController.create
 );

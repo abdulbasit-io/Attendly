@@ -13,6 +13,7 @@ export default function StudentProfilePage() {
   const [fullName, setFullName] = useState(user?.fullName ?? '');
   const [department, setDepartment] = useState(user?.department ?? '');
   const [gender, setGender] = useState(user?.gender ?? '');
+  const [level, setLevel] = useState(user?.level?.toString() ?? '');
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState(false);
@@ -34,6 +35,7 @@ export default function StudentProfilePage() {
         fullName,
         department,
         gender: gender || undefined,
+        level: level ? parseInt(level, 10) : undefined,
       });
       const tokens = {
         accessToken: localStorage.getItem('accessToken') ?? '',
@@ -132,6 +134,21 @@ export default function StudentProfilePage() {
                     <option value="">Prefer not to say</option>
                     <option value="MALE">Male</option>
                     <option value="FEMALE">Female</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                <div className="input-group">
+                  <label className="input-label">Level</label>
+                  <select className="select" value={level} onChange={(e) => setLevel(e.target.value)}>
+                    <option value="">Select level</option>
+                    <option value="100">100L</option>
+                    <option value="200">200L</option>
+                    <option value="300">300L</option>
+                    <option value="400">400L</option>
+                    <option value="500">500L</option>
+                    <option value="600">600L</option>
                   </select>
                 </div>
               </div>

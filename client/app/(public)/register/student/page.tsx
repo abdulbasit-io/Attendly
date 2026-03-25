@@ -17,6 +17,7 @@ export default function RegisterStudentPage() {
     department: '',
     matricNumber: '',
     gender: '',
+    level: '',
     password: '',
     confirmPassword: '',
   });
@@ -38,6 +39,7 @@ export default function RegisterStudentPage() {
     if (!form.department.trim()) errs.department = 'Department is required';
     if (!form.matricNumber.trim()) errs.matricNumber = 'Matric number is required';
     if (!form.gender) errs.gender = 'Gender is required';
+    if (!form.level) errs.level = 'Level is required';
     if (form.password.length < 8) errs.password = 'Password must be at least 8 characters';
     if (form.password !== form.confirmPassword) errs.confirmPassword = 'Passwords do not match';
     setFieldErrors(errs);
@@ -60,6 +62,7 @@ export default function RegisterStudentPage() {
           department: form.department,
           matricNumber: form.matricNumber,
           gender: form.gender,
+          level: parseInt(form.level, 10),
           password: form.password,
         }
       );
@@ -173,6 +176,31 @@ export default function RegisterStudentPage() {
                 </select>
                 {fieldErrors.gender && (
                   <span className="input-error-msg">{fieldErrors.gender}</span>
+                )}
+              </div>
+            </div>
+
+            <div className={styles.formRow}>
+              <div className="input-group">
+                <label htmlFor="level" className="input-label">
+                  Level <span className="required">*</span>
+                </label>
+                <select
+                  id="level"
+                  className={`select${fieldErrors.level ? ' input-error' : ''}`}
+                  value={form.level}
+                  onChange={(e) => set('level', e.target.value)}
+                >
+                  <option value="">Select level</option>
+                  <option value="100">100L</option>
+                  <option value="200">200L</option>
+                  <option value="300">300L</option>
+                  <option value="400">400L</option>
+                  <option value="500">500L</option>
+                  <option value="600">600L</option>
+                </select>
+                {fieldErrors.level && (
+                  <span className="input-error-msg">{fieldErrors.level}</span>
                 )}
               </div>
             </div>
