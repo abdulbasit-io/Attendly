@@ -5,13 +5,11 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
   LayoutDashboard,
-  BookOpen,
   History,
   User,
   LogOut,
   Menu,
   X,
-  QrCode,
 } from 'lucide-react';
 import { getStoredUser, clearStoredAuth, UserRole } from '@/lib/auth';
 import styles from './dashboard.module.css';
@@ -37,6 +35,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const stored = getStoredUser();
     if (!stored) {
       router.replace(`/login?returnTo=${encodeURIComponent(pathname)}`);
+      return;
+    }
+    // Role-based route guard
+    const isLecturerRoute = pathname.startsWith('/lecturer/');
+    const isStudentRoute = pathname.startsWith('/student/');
+    if (isLecturerRoute && stored.role !== 'LECTURER') {
+      router.replace('/student/dashboard');
+      return;
+    }
+    if (isStudentRoute && stored.role !== 'STUDENT') {
+      router.replace('/lecturer/dashboard');
       return;
     }
     setUser(stored);

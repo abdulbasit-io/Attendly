@@ -132,4 +132,15 @@ async function getInfo(id) {
   };
 }
 
-module.exports = { create, getById, close, getInfo };
+// Close any sessions that expired while the server was down
+async function closeExpiredSessions() {
+  const result = await prisma.session.updateMany({
+    where: { status: 'ACTIVE', expiresAt: { lt: new Date() } },
+    data: { status: 'CLOSED', closedAt: new Date() },
+  });
+  if (result.count > 0) {
+    console.log(`[startup] Closed ${result.count} expired session(s)`);
+  }
+}
+
+module.exports = { create, getById, close, getInfo, closeExpiredSessions };

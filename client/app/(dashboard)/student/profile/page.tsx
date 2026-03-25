@@ -59,7 +59,7 @@ export default function StudentProfilePage() {
 
     setPasswordLoading(true);
     try {
-      await api.post('/api/auth/login', { identifier: user?.email, password: currentPassword });
+      await api.post('/api/auth/change-password', { currentPassword, newPassword });
       setPasswordSuccess(true);
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
       setTimeout(() => setPasswordSuccess(false), 3000);

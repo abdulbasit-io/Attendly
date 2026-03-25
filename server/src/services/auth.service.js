@@ -157,4 +157,23 @@ async function updateProfile(id, data) {
   return sanitizeUser(user);
 }
 
-module.exports = { register, login, refresh, forgotPassword, resetPassword, getUser, updateProfile };
+async function changePassword(userId, currentPassword, newPassword) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    const err = new Error('User not found');
+    err.status = 404;
+    throw err;
+  }
+
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) {
+    const err = new Error('Current password is incorrect');
+    err.status = 400;
+    throw err;
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+}
+
+module.exports = { register, login, refresh, forgotPassword, resetPassword, getUser, updateProfile, changePassword };

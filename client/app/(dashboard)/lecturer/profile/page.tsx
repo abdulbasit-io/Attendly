@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, FormEvent } from 'react';
 import { User as UserIcon, Lock } from 'lucide-react';
 import { getStoredUser, setStoredAuth, User } from '@/lib/auth';
 import { api, ApiError } from '@/lib/api';
@@ -63,13 +63,7 @@ export default function LecturerProfilePage() {
 
     setPasswordLoading(true);
     try {
-      // Re-login with current password to verify, then update
-      await api.post('/api/auth/login', {
-        identifier: user?.email,
-        password: currentPassword,
-      });
-      // If login succeeds, update password via profile endpoint
-      // Note: full password change endpoint would be a dedicated route in production
+      await api.post('/api/auth/change-password', { currentPassword, newPassword });
       setPasswordSuccess(true);
       setCurrentPassword('');
       setNewPassword('');

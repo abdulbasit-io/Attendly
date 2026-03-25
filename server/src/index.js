@@ -9,6 +9,7 @@ const courseRoutes = require('./routes/course.routes');
 const sessionRoutes = require('./routes/session.routes');
 const attendanceRoutes = require('./routes/attendance.routes');
 const errorHandler = require('./middleware/errorHandler');
+const { closeExpiredSessions } = require('./services/session.service');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -52,8 +53,9 @@ app.use((req, res) => {
 // Global error handler
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Attendly server running on port ${PORT}`);
+  await closeExpiredSessions();
 });
 
 module.exports = app;

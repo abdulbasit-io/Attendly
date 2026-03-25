@@ -83,4 +83,16 @@ async function updateProfile(req, res, next) {
   }
 }
 
-module.exports = { register, login, refresh, forgotPassword, resetPassword, me, updateProfile };
+async function changePassword(req, res, next) {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(422).json({ errors: errors.array() });
+
+    await authService.changePassword(req.user.id, req.body.currentPassword, req.body.newPassword);
+    res.json({ message: 'Password updated successfully.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { register, login, refresh, forgotPassword, resetPassword, me, updateProfile, changePassword };

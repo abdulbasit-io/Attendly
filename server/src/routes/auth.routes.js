@@ -62,4 +62,13 @@ router.put('/profile',
   authController.updateProfile
 );
 
+router.post('/change-password',
+  auth,
+  [
+    body('currentPassword').notEmpty(),
+    body('newPassword').isLength({ min: 8 }),
+  ],
+  authController.changePassword
+);
+
 module.exports = router;

@@ -155,9 +155,9 @@ PasswordResetToken — for forgot password flow
 |---|---|---|
 | **Sprint 1** | Scaffolding, DB schema, design system, landing page, auth pages, dashboard shell | **Done** |
 | **Sprint 2** | Course CRUD, lecturer dashboard, course detail + analytics, profile pages | **Done** |
-| **Sprint 3** | Session creation (GPS), QR generation, WhatsApp share, student attend flow, geofence verification | In progress |
-| **Sprint 4** | Live SSE attendee list, active session page, session auto-close, student history | Pending |
-| **Sprint 5** | Analytics polish, profile editing, error states, responsive testing | Pending |
+| **Sprint 3** | Session creation (GPS), QR generation, WhatsApp share, student attend flow, geofence verification | **Done** |
+| **Sprint 4** | Live SSE attendee list, active session page, session auto-close, student history | **Done** |
+| **Sprint 5** | Closed session record view, CSV export, password change, role guards, error boundary, 404 | **Done** |
 | **Sprint 6** | E2E testing, performance testing, security audit, production deploy | Pending |
 
 ---

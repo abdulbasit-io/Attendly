@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Share2, Download, StopCircle, Users, Clock,
-  CheckCircle, AlertCircle, Wifi, WifiOff,
+  CheckCircle, Wifi, WifiOff, FileDown, MapPin, Timer,
 } from 'lucide-react';
 import { useSession, Attendee } from '@/lib/hooks';
 import { api, ApiError } from '@/lib/api';
@@ -108,6 +108,78 @@ async function shareQRNative(imageBase64: string, attendUrl: string, courseTitle
   } catch {
     return false;
   }
+}
+
+// ── Client-side CSV export ────────────────────────────────────
+function exportSessionCSV(attendees: Attendee[], courseCode: string, sessionDate: string) {
+  const header = 'Name,Matric Number,Department,Time Signed In,Distance (m)\n';
+  const rows = attendees.map((a) => {
+    const time = new Date(a.signedAt).toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return `"${a.fullName}","${a.matricNumber || ''}","${a.department || ''}","${time}",${Math.round(Number(a.distanceM))}`;
+  });
+  const csv = header + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `attendance-${courseCode}-${sessionDate}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Session summary card (shown for closed sessions) ──────────
+function SessionSummaryCard({ session, attendeeCount }: {
+  session: { createdAt: string; closedAt?: string | null; expiresAt: string; timeLimitMinutes: number; geofenceRadiusM: number };
+  attendeeCount: number;
+}) {
+  const opened = new Date(session.createdAt);
+  const closed = session.closedAt ? new Date(session.closedAt) : new Date(session.expiresAt);
+  const durationMs = closed.getTime() - opened.getTime();
+  const durationMins = Math.round(durationMs / 60000);
+
+  const fmt = (d: Date) => d.toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+
+  return (
+    <div className="card">
+      <div className="card-header" style={{ paddingBottom: 'var(--space-3)' }}>
+        <span style={{ fontWeight: 'var(--font-weight-semibold)', fontSize: 'var(--font-size-sm)' }}>
+          Session Summary
+        </span>
+      </div>
+      <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-sm)' }}>
+          <span style={{ color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+            <Clock size={13} /> Opened
+          </span>
+          <span style={{ fontWeight: 'var(--font-weight-medium)' }}>{fmt(opened)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-sm)' }}>
+          <span style={{ color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+            <Clock size={13} /> Closed
+          </span>
+          <span style={{ fontWeight: 'var(--font-weight-medium)' }}>{fmt(closed)}</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-sm)' }}>
+          <span style={{ color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+            <Timer size={13} /> Duration
+          </span>
+          <span style={{ fontWeight: 'var(--font-weight-medium)' }}>{durationMins} min</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-sm)' }}>
+          <span style={{ color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+            <MapPin size={13} /> Geofence
+          </span>
+          <span style={{ fontWeight: 'var(--font-weight-medium)' }}>{session.geofenceRadiusM}m radius</span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--font-size-sm)' }}>
+          <span style={{ color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+            <Users size={13} /> Attendees
+          </span>
+          <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-primary)' }}>{attendeeCount}</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Attendee row ──────────────────────────────────────────────
@@ -289,7 +361,12 @@ export default function SessionDetailPage() {
       <div className={styles.sessionLayout}>
         {/* Left — QR + actions */}
         <div className={styles.qrPanel}>
-          {/* Timer */}
+          {/* Session summary (closed) */}
+          {!isActive && (
+            <SessionSummaryCard session={session} attendeeCount={attendees.length} />
+          )}
+
+          {/* Timer (active) */}
           {isActive && (
             <div className={styles.timerCard}>
               <div className={styles.timerLabel}>
@@ -371,12 +448,24 @@ export default function SessionDetailPage() {
               <span style={{ fontWeight: 'var(--font-weight-semibold)' }}>Attendees</span>
               <span className="badge badge-brand">{attendees.length}</span>
             </div>
-            {isActive && (
+            {isActive ? (
               <div className={`${styles.sseIndicator} ${connected ? styles.sseConnected : styles.sseDisconnected}`}>
                 {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
                 {connected ? 'Live' : 'Reconnecting…'}
               </div>
-            )}
+            ) : attendees.length > 0 ? (
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => exportSessionCSV(
+                  attendees,
+                  courseCode,
+                  new Date(session.createdAt).toISOString().slice(0, 10),
+                )}
+              >
+                <FileDown size={14} />
+                Export CSV
+              </button>
+            ) : null}
           </div>
 
           {attendees.length === 0 ? (
