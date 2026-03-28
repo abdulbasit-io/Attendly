@@ -106,6 +106,17 @@ async function sign(studentId, data) {
     }
   }
 
+  if (ipAddress) {
+    const ipConflict = await prisma.attendance.findFirst({
+      where: { sessionId, ipAddress },
+    });
+    if (ipConflict) {
+      const err = new Error('Attendance has already been signed from this device for this session');
+      err.status = 409;
+      throw err;
+    }
+  }
+
   const attendance = await prisma.attendance.create({
     data: {
       sessionId,
