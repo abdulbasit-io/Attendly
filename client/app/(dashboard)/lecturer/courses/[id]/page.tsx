@@ -73,7 +73,22 @@ function AnalyticsTab({ courseId }: { courseId: string }) {
   const { records, stats, loading, error } = useCourseAttendance(courseId);
 
   async function handleExport() {
-    window.open(`${process.env.NEXT_PUBLIC_API_URL}/api/attendance/course/${courseId}/export`, '_blank');
+    const token = localStorage.getItem('accessToken');
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/attendance/course/${courseId}/export`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!res.ok) return;
+    const csv = await res.text();
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `attendance-${courseId}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
   }
 
   if (loading) {

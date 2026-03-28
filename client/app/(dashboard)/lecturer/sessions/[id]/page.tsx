@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Share2, Download, StopCircle, Users, Clock,
@@ -90,7 +90,9 @@ function downloadQR(imageBase64: string, courseCode: string) {
   const link = document.createElement('a');
   link.href = imageBase64;
   link.download = `attendance-qr-${courseCode}.png`;
+  document.body.appendChild(link);
   link.click();
+  document.body.removeChild(link);
 }
 
 // ── Client-side CSV export ────────────────────────────────────
@@ -106,8 +108,10 @@ function exportSessionCSV(attendees: Attendee[], courseCode: string, sessionDate
   const link = document.createElement('a');
   link.href = url;
   link.download = `attendance-${courseCode}-${sessionDate}.csv`;
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
 // ── Session summary card (shown for closed sessions) ──────────
@@ -251,10 +255,9 @@ function EndSessionModal({ onConfirm, onCancel, loading }: {
 // ── Main page ─────────────────────────────────────────────────
 export default function SessionDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const sessionId = params.id as string;
 
-  const { session, qrCodeImage, attendUrl, attendees: initialAttendees, loading, error } = useSession(sessionId);
+  const { session, qrCodeImage, attendUrl, attendees: initialAttendees, loading, error, refetch } = useSession(sessionId);
   const isActive = session?.status === 'ACTIVE';
   const { secondsLeft, display: timerDisplay } = useCountdown(session?.expiresAt ?? null);
   const { attendees, connected } = useSSEAttendees(sessionId, initialAttendees, isActive);
@@ -270,18 +273,17 @@ export default function SessionDetailPage() {
   // Auto-redirect when session expires
   useEffect(() => {
     if (isActive && secondsLeft === 0 && session) {
-      // Give a moment for the server to process, then refresh
-      const t = setTimeout(() => router.refresh(), 2000);
+      const t = setTimeout(() => refetch(), 2000);
       return () => clearTimeout(t);
     }
-  }, [isActive, secondsLeft, session, router]);
+  }, [isActive, secondsLeft, session, refetch]);
 
   async function handleEndSession() {
     setEnding(true);
     try {
       await api.patch(`/api/sessions/${sessionId}/close`);
       setShowEndModal(false);
-      router.refresh();
+      await refetch();
     } catch (err) {
       setEnding(false);
     }
