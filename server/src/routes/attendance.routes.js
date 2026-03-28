@@ -12,7 +12,7 @@ router.post('/',
     body('latitude').isFloat({ min: -90, max: 90 }),
     body('longitude').isFloat({ min: -180, max: 180 }),
     body('deviceId').optional().isString().isLength({ max: 64 }),
-    body('fingerprint').optional().isString().isLength({ max: 32 }),
+    body('fingerprint').optional().isString().isLength({ max: 16 }),
   ],
   attendanceController.sign
 );
