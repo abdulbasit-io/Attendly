@@ -76,11 +76,12 @@ async function getById(id, lecturerId) {
     throw err;
   }
 
-  const { imageBase64 } = await generateSessionQR(session.id, CLIENT_URL);
+  const { attendUrl, imageBase64 } = await generateSessionQR(session.id, CLIENT_URL);
 
   return {
     session,
     qrCodeImage: imageBase64,
+    attendUrl,
     attendees: session.attendances.map((a) => ({
       id: a.student.id,
       fullName: a.student.fullName,
