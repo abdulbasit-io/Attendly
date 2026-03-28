@@ -36,7 +36,7 @@ function AttendCard({ children }: { children: React.ReactNode }) {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <span className={styles.logo}>Attendly</span>
+        <Link href="/" className={styles.logo}>Attendly</Link>
       </div>
       <div className={styles.card}>
         {children}

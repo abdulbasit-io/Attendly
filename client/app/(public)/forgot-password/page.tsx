@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
   return (
     <div className={styles.page}>
       <aside className={styles.panel}>
-        <span className={styles.panelLogo}>Attendly</span>
+        <Link href="/" className={styles.panelLogo}>Attendly</Link>
         <div className={styles.panelContent}>
           <h2 className={styles.panelHeading}>Locked out?</h2>
           <p className={styles.panelSubtitle}>

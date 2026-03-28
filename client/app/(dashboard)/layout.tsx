@@ -78,7 +78,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           <Menu size={20} />
         </button>
-        <span className={styles.topbarLogo}>Attendly</span>
+        <Link href="/" className={styles.topbarLogo}>Attendly</Link>
         <Link href={user.role === 'LECTURER' ? '/lecturer/profile' : '/student/profile'}>
           <div className="avatar avatar-sm">{initials}</div>
         </Link>
@@ -96,7 +96,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarHeader}>
           <Link href={user.role === 'LECTURER' ? '/lecturer/dashboard' : '/student/dashboard'}>
-            <span className={styles.sidebarLogo}>Attendly</span>
+            <Link href="/" className={styles.sidebarLogo}>Attendly</Link>
           </Link>
           <button
             className={`${styles.menuBtn} ${styles.closeSidebarBtn}`}

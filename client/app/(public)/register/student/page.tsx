@@ -80,7 +80,7 @@ export default function RegisterStudentPage() {
     <div className={styles.page}>
       {/* Left branding panel */}
       <aside className={styles.panel}>
-        <span className={styles.panelLogo}>Attendly</span>
+        <Link href="/" className={styles.panelLogo}>Attendly</Link>
         <div className={styles.panelContent}>
           <h2 className={styles.panelHeading}>
             Sign attendance in seconds.

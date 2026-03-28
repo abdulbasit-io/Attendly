@@ -22,7 +22,7 @@ function ResetPasswordForm() {
     return (
       <div className={styles.page}>
         <aside className={styles.panel}>
-          <span className={styles.panelLogo}>Attendly</span>
+          <Link href="/" className={styles.panelLogo}>Attendly</Link>
           <div className={styles.panelContent}>
             <h2 className={styles.panelHeading}>Invalid link</h2>
           </div>
@@ -70,7 +70,7 @@ function ResetPasswordForm() {
   return (
     <div className={styles.page}>
       <aside className={styles.panel}>
-        <span className={styles.panelLogo}>Attendly</span>
+        <Link href="/" className={styles.panelLogo}>Attendly</Link>
         <div className={styles.panelContent}>
           <h2 className={styles.panelHeading}>Create a new password</h2>
           <p className={styles.panelSubtitle}>
