@@ -80,17 +80,19 @@ model Attendance {
   id        String   @id @default(uuid())
   sessionId String
   studentId String
-  deviceId  String?
-  latitude  Decimal  @db.Decimal(10, 7)
-  longitude Decimal  @db.Decimal(10, 7)
-  distanceM Decimal  @db.Decimal(8, 2)
-  signedAt  DateTime @default(now())
+  deviceId    String?
+  fingerprint String?
+  latitude    Decimal  @db.Decimal(10, 7)
+  longitude   Decimal  @db.Decimal(10, 7)
+  distanceM   Decimal  @db.Decimal(8, 2)
+  signedAt    DateTime @default(now())
 
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, studentId])
   @@unique([sessionId, deviceId])
+  @@unique([sessionId, fingerprint])
 }
 
 model PasswordResetToken {
