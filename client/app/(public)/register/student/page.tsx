@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { setStoredAuth, User } from '@/lib/auth';
 import styles from '../../auth.module.css';
 
-export default function RegisterStudentPage() {
+function RegisterStudentForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo') || '';
 
   const [form, setForm] = useState({
     fullName: '',
@@ -68,7 +70,7 @@ export default function RegisterStudentPage() {
       );
 
       setStoredAuth(data.user, data.accessToken, data.refreshToken);
-      router.push('/student/dashboard');
+      router.push(returnTo || '/student/dashboard');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Registration failed. Please try again.');
     } finally {
@@ -299,10 +301,18 @@ export default function RegisterStudentPage() {
 
           <div className={styles.formFooter}>
             Already have an account?{' '}
-            <Link href="/login">Sign in</Link>
+            <Link href={`/login${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`}>Sign in</Link>
           </div>
         </div>
       </main>
     </div>
+  );
+}
+
+export default function RegisterStudentPage() {
+  return (
+    <Suspense>
+      <RegisterStudentForm />
+    </Suspense>
   );
 }

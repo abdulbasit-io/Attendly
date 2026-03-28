@@ -75,9 +75,9 @@ function LoginForm() {
             <h1 className={styles.formTitle}>Sign in</h1>
             <p className={styles.formSubtitle}>
               No account?{' '}
-              <Link href="/register/lecturer">Register as Lecturer</Link>
+              <Link href={`/register/lecturer${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`}>Register as Lecturer</Link>
               {' '}or{' '}
-              <Link href="/register/student">as Student</Link>
+              <Link href={`/register/student${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`}>as Student</Link>
             </p>
           </div>
 
