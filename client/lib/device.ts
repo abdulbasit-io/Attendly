@@ -10,12 +10,12 @@ function fnv1a(str: string): string {
   return hash.toString(16).padStart(8, '0');
 }
 
-// Stable signals that survive incognito and localStorage clears
+// Hardware-only signals — identical across all browsers on the same device.
+// userAgent and language are intentionally excluded: they differ between
+// Chrome/Firefox/Safari on the same phone, which would allow cross-browser bypass.
 function generateFingerprint(): string {
   const parts = [
-    navigator.userAgent,
-    navigator.language,
-    `${screen.width}x${screen.height}x${screen.colorDepth}`,
+    `${screen.width}x${screen.height}x${screen.colorDepth}x${screen.pixelDepth}`,
     String(navigator.hardwareConcurrency ?? 0),
     Intl.DateTimeFormat().resolvedOptions().timeZone,
     navigator.platform,
