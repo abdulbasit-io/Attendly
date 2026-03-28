@@ -3,7 +3,7 @@ const { haversineDistance } = require('../utils/haversine');
 const { eventEmitter } = require('./events');
 
 async function sign(studentId, data) {
-  const { sessionId, latitude, longitude } = data;
+  const { sessionId, latitude, longitude, deviceId } = data;
 
   const session = await prisma.session.findUnique({ where: { id: sessionId } });
   if (!session) {
@@ -52,6 +52,17 @@ async function sign(studentId, data) {
     throw err;
   }
 
+  if (deviceId) {
+    const deviceConflict = await prisma.attendance.findUnique({
+      where: { sessionId_deviceId: { sessionId, deviceId } },
+    });
+    if (deviceConflict) {
+      const err = new Error('Attendance has already been signed from this device for this session');
+      err.status = 409;
+      throw err;
+    }
+  }
+
   const student = await prisma.user.findUnique({
     where: { id: studentId },
     select: { id: true, fullName: true, matricNumber: true, department: true },
@@ -61,6 +72,7 @@ async function sign(studentId, data) {
     data: {
       sessionId,
       studentId,
+      deviceId: deviceId || null,
       latitude,
       longitude,
       distanceM: Math.round(distance * 100) / 100,

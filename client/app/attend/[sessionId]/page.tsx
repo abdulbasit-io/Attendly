@@ -7,6 +7,7 @@ import { MapPin, CheckCircle, XCircle, AlertCircle, Loader, Clock } from 'lucide
 import { getStoredUser } from '@/lib/auth';
 import { getCurrentPosition, GeoPosition } from '@/lib/geo';
 import { api, ApiError } from '@/lib/api';
+import { getDeviceId } from '@/lib/device';
 import styles from './attend.module.css';
 
 // ── Types ─────────────────────────────────────────────────────
@@ -115,6 +116,7 @@ export default function AttendPage() {
         sessionId,
         latitude: position.latitude,
         longitude: position.longitude,
+        deviceId: getDeviceId(),
       });
       setFlowState('success');
     } catch (err) {

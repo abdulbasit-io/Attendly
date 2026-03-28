@@ -80,6 +80,7 @@ model Attendance {
   id        String   @id @default(uuid())
   sessionId String
   studentId String
+  deviceId  String?
   latitude  Decimal  @db.Decimal(10, 7)
   longitude Decimal  @db.Decimal(10, 7)
   distanceM Decimal  @db.Decimal(8, 2)
@@ -89,6 +90,7 @@ model Attendance {
   student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([sessionId, studentId])
+  @@unique([sessionId, deviceId])
 }
 
 model PasswordResetToken {

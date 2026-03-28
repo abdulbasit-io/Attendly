@@ -11,6 +11,7 @@ router.post('/',
     body('sessionId').isUUID(),
     body('latitude').isFloat({ min: -90, max: 90 }),
     body('longitude').isFloat({ min: -180, max: 180 }),
+    body('deviceId').optional().isString().isLength({ max: 64 }),
   ],
   attendanceController.sign
 );
