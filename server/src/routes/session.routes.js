@@ -24,6 +24,9 @@ router.get('/:id', auth, requireRole('LECTURER'), sessionController.getById);
 // Close session (lecturer only)
 router.patch('/:id/close', auth, requireRole('LECTURER'), sessionController.close);
 
+// Delete session (lecturer only)
+router.delete('/:id', auth, requireRole('LECTURER'), sessionController.deleteSession);
+
 // SSE stream for live attendee updates (lecturer only)
 router.get('/:id/stream', auth, requireRole('LECTURER'), sessionController.stream);
 

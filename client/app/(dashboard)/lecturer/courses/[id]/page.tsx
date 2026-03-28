@@ -27,7 +27,10 @@ import styles from './course.module.css';
 type Tab = 'sessions' | 'analytics' | 'enrollment';
 
 // ── Session row ───────────────────────────────────────────────
-function SessionRow({ session }: { session: Session & { _count?: { attendances: number } } }) {
+function SessionRow({ session, onDelete }: {
+  session: Session & { _count?: { attendances: number } };
+  onDelete: (id: string) => void;
+}) {
   const date = new Date(session.createdAt);
   const isActive = session.status === 'ACTIVE';
   const attendeeCount = session._count?.attendances ?? 0;
@@ -60,13 +63,25 @@ function SessionRow({ session }: { session: Session & { _count?: { attendances: 
         </span>
       </td>
       <td>
-        <Link
-          href={`/lecturer/sessions/${session.id}`}
-          className="btn btn-ghost btn-sm"
-          style={{ fontSize: 'var(--font-size-xs)' }}
-        >
-          View
-        </Link>
+        <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
+          <Link
+            href={`/lecturer/sessions/${session.id}`}
+            className="btn btn-ghost btn-sm"
+            style={{ fontSize: 'var(--font-size-xs)' }}
+          >
+            View
+          </Link>
+          {!isActive && (
+            <button
+              className="btn btn-ghost btn-sm btn-icon"
+              onClick={() => onDelete(session.id)}
+              aria-label="Delete session"
+              style={{ color: 'var(--color-error)' }}
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
+        </div>
       </td>
     </tr>
   );
@@ -399,6 +414,15 @@ export default function CourseDetailPage() {
   const { course, sessions, loading, error, refetch } = useCourse(courseId);
   const [activeTab, setActiveTab] = useState<Tab>('sessions');
   const [archiving, setArchiving] = useState(false);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+
+  async function handleDeleteSession(sessionId: string) {
+    if (!confirm('Delete this session and all its attendance records? This cannot be undone.')) return;
+    try {
+      await api.del(`/api/sessions/${sessionId}`);
+      refetch();
+    } catch { /* ignore */ }
+  }
 
   async function handleArchive() {
     if (!course) return;
@@ -534,7 +558,7 @@ export default function CourseDetailPage() {
               </thead>
               <tbody>
                 {sessions.map((session) => (
-                  <SessionRow key={session.id} session={session} />
+                  <SessionRow key={session.id} session={session} onDelete={handleDeleteSession} />
                 ))}
               </tbody>
             </table>

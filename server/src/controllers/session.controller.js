@@ -67,4 +67,13 @@ function stream(req, res) {
   });
 }
 
-module.exports = { create, getById, close, getInfo, stream };
+async function deleteSession(req, res, next) {
+  try {
+    await sessionService.deleteSession(req.params.id, req.user.id);
+    res.status(200).json({ message: 'Session deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { create, getById, close, deleteSession, getInfo, stream };

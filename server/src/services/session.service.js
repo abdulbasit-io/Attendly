@@ -145,4 +145,15 @@ async function closeExpiredSessions() {
   }
 }
 
-module.exports = { create, getById, close, getInfo, closeExpiredSessions };
+async function deleteSession(id, lecturerId) {
+  const session = await prisma.session.findFirst({ where: { id, lecturerId } });
+  if (!session) {
+    const err = new Error('Session not found or access denied');
+    err.status = 404;
+    throw err;
+  }
+
+  await prisma.session.delete({ where: { id } });
+}
+
+module.exports = { create, getById, close, deleteSession, getInfo, closeExpiredSessions };

@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Share2, Download, StopCircle, Users, Clock,
   CheckCircle, Wifi, WifiOff, FileDown, MapPin, Timer, Copy, Check,
-  UserPlus, Search, Pencil,
+  UserPlus, Search, Pencil, Trash2,
 } from 'lucide-react';
 import { useSession, Attendee } from '@/lib/hooks';
 import { api, ApiError } from '@/lib/api';
@@ -374,6 +374,45 @@ function MarkPresentModal({ sessionId, onMarked, onCancel }: {
   );
 }
 
+// ── Delete session modal ──────────────────────────────────────
+function DeleteSessionModal({ attendeeCount, onConfirm, onCancel, loading }: {
+  attendeeCount: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+  loading: boolean;
+}) {
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)' }}>
+            Delete Session?
+          </h2>
+        </div>
+        <div className="modal-body">
+          <p style={{ color: 'var(--color-text-secondary)' }}>
+            This will permanently delete this session
+            {attendeeCount > 0 && (
+              <> and all <strong>{attendeeCount} attendance record{attendeeCount !== 1 ? 's' : ''}</strong> associated with it</>
+            )}
+            . This cannot be undone.
+          </p>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+          <button
+            className={`btn btn-danger${loading ? ' btn-loading' : ''}`}
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? '' : 'Delete Session'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── End session modal ─────────────────────────────────────────
 function EndSessionModal({ onConfirm, onCancel, loading }: {
   onConfirm: () => void;
@@ -412,6 +451,7 @@ function EndSessionModal({ onConfirm, onCancel, loading }: {
 // ── Main page ─────────────────────────────────────────────────
 export default function SessionDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const sessionId = params.id as string;
 
   const { session, qrCodeImage, attendUrl, attendees: initialAttendees, loading, error, refetch } = useSession(sessionId);
@@ -420,7 +460,9 @@ export default function SessionDetailPage() {
   const { attendees, connected, addAttendee } = useSSEAttendees(sessionId, initialAttendees, isActive);
 
   const [ending, setEnding] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showMarkModal, setShowMarkModal] = useState(false);
   const [shareError, setShareError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -444,6 +486,16 @@ export default function SessionDetailPage() {
       await refetch();
     } catch (err) {
       setEnding(false);
+    }
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await api.del(`/api/sessions/${sessionId}`);
+      router.replace(`/lecturer/courses/${session!.courseId}`);
+    } catch {
+      setDeleting(false);
     }
   }
 
@@ -500,12 +552,20 @@ export default function SessionDetailPage() {
             })}
           </p>
         </div>
-        {isActive && (
-          <button className="btn btn-danger-outline btn-sm" onClick={() => setShowEndModal(true)}>
-            <StopCircle size={14} />
-            End Session
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          {isActive && (
+            <button className="btn btn-danger-outline btn-sm" onClick={() => setShowEndModal(true)}>
+              <StopCircle size={14} />
+              End Session
+            </button>
+          )}
+          {!isActive && (
+            <button className="btn btn-ghost btn-sm" onClick={() => setShowDeleteModal(true)} style={{ color: 'var(--color-error)' }}>
+              <Trash2 size={14} />
+              Delete
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main two-column layout */}
@@ -673,6 +733,16 @@ export default function SessionDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Delete session modal */}
+      {showDeleteModal && (
+        <DeleteSessionModal
+          attendeeCount={attendees.length}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteModal(false)}
+          loading={deleting}
+        />
+      )}
 
       {/* Mark present modal */}
       {showMarkModal && (
