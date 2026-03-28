@@ -1,18 +1,18 @@
 # Attendly
 
-> *"With Attendly, attendance is as simple as a single scan."*
+> *"One scan. Attendance done."*
 
-**Attendly** is a location-smart, QR-based attendance system for universities. Lecturers create time-bound sessions, share a QR code via WhatsApp, and students scan to mark attendance — verified by GPS proximity. No hardware. No roll calls. Just scan.
+**Attendly** is a location-smart, QR-based attendance system built for FUNAAB. Lecturers create time-bound sessions, share a QR code via WhatsApp, and students scan to mark attendance — verified by GPS proximity. No hardware. No roll calls. Just scan.
 
 ---
 
 ## How It Works
 
-1. **Lecturer** creates an attendance session (selects course, sets time limit, optionally restricts by level)
+1. **Lecturer** creates an attendance session (selects course, sets time limit, optionally restricts by student level)
 2. System captures the lecturer's GPS and generates a **unique QR code**
-3. Lecturer shares the QR image or direct link to the class **WhatsApp group**
-4. **Students** scan the QR → system verifies they're physically near the class
-5. One tap → attendance confirmed
+3. Lecturer shares the QR image or direct attendance link to the class **WhatsApp group**
+4. **Students** scan the QR → system verifies they are physically near the classroom
+5. One tap → attendance confirmed, record saved instantly
 
 ---
 
@@ -20,11 +20,14 @@
 
 - **Location-verified** — GPS geofencing ensures only physically present students can sign in
 - **One-scan simple** — students tap once; name and matric number auto-fill from their account
+- **Device-bound sign-in** — each device can only sign attendance once per session (UUID + browser fingerprint)
 - **Level enforcement** — sessions can be restricted to a specific student level (100L–600L)
-- **Time-bound sessions** — auto-close after the lecturer's set duration
-- **Live attendee list** — real-time updates via SSE as students sign in
-- **Course analytics** — per-session records, cumulative stats, per-student %, CSV export
-- **Zero infrastructure** — no beacons, no hardware, no app to install. Works in any mobile browser
+- **Time-bound sessions** — auto-close after the lecturer's set duration; manual close also available
+- **Live attendee list** — real-time updates via SSE as students sign in during a session
+- **Course analytics** — per-session records, cumulative stats, per-student attendance %, CSV export
+- **WhatsApp sharing** — one-tap share of the QR or attendance link directly to a class group
+- **Zero infrastructure** — no beacons, no hardware, no app to install; works in any mobile browser
+- **Student email enforcement** — student accounts require a `@student.funaab.edu.ng` email address
 
 ---
 
@@ -33,7 +36,7 @@
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 16 (App Router, TypeScript) |
-| Styling | Vanilla CSS (custom properties / design tokens) |
+| Styling | Vanilla CSS (custom design tokens) |
 | Icons | Lucide React |
 | Backend | Node.js + Express.js |
 | Database | PostgreSQL |
@@ -41,7 +44,7 @@
 | Auth | JWT (access + refresh tokens) + bcrypt |
 | QR Generation | `qrcode` npm package (server-side PNG) |
 | Real-time | Server-Sent Events (SSE) |
-| Hosting | Vercel (frontend) · Railway (backend + DB) |
+| Hosting | Vercel (frontend) · Render (backend) · Railway (database) |
 
 ---
 
@@ -56,7 +59,7 @@ Attendly/
         lecturer/          # Dashboard, course detail, session pages, profile
         student/           # Dashboard, history, profile
       attend/[sessionId]/  # QR scan target — student attendance flow
-    lib/                   # api.ts, auth.ts, geo.ts, hooks.ts
+    lib/                   # api.ts, auth.ts, geo.ts, hooks.ts, device.ts
     styles/                # globals.css (design tokens), components.css
 
   server/                  # Express.js backend
@@ -70,7 +73,7 @@ Attendly/
       schema.prisma        # DB schema
       migrations/          # Migration history
 
-  docs/                    # Product, SRS, technical architecture, IA & wireframes
+  docs/                    # Product spec, SRS, technical architecture, IA & wireframes
 ```
 
 ---
@@ -80,7 +83,7 @@ Attendly/
 ### Prerequisites
 
 - Node.js 18+
-- PostgreSQL database (local or [Neon](https://neon.tech) / [Railway](https://railway.app))
+- PostgreSQL database (local, [Render](https://render.com), or [Railway](https://railway.app))
 
 ### 1. Clone and install
 
@@ -125,7 +128,8 @@ NEXT_PUBLIC_API_URL=http://localhost:4000
 
 ```bash
 cd server
-npx prisma migrate dev   # Run migrations + generate client
+npx prisma migrate deploy   # Apply all migrations
+npx prisma generate         # Generate Prisma client
 ```
 
 ### 4. Run in development
@@ -145,27 +149,34 @@ cd client && npm run dev    # http://localhost:3000
 ```
 User
   id, role (LECTURER | STUDENT), fullName, email, passwordHash
-  department, matricNumber, gender (MALE | FEMALE), level
+  department?, matricNumber?, gender (MALE | FEMALE)?, level?
   createdAt, updatedAt
 
 Course
   id, lecturerId, courseCode, courseTitle, isArchived
   createdAt, updatedAt
+  UNIQUE (lecturerId, courseCode)
 
 Session
   id, courseId, lecturerId
-  latitude, longitude, geofenceRadiusM
-  timeLimitMinutes, level (optional — restricts by student level)
-  qrPayload, status (ACTIVE | CLOSED)
-  createdAt, expiresAt, closedAt
+  latitude, longitude, geofenceRadiusM (default 50m)
+  timeLimitMinutes, level? (optional — restricts sign-in by student level)
+  qrPayload (UNIQUE), status (ACTIVE | CLOSED)
+  createdAt, expiresAt, closedAt?
 
 Attendance
   id, sessionId, studentId
+  deviceId?    — persistent browser UUID (one sign-in per device per session)
+  fingerprint? — browser fingerprint hash (blocks incognito/localStorage bypass)
   latitude, longitude, distanceM
   signedAt
+  UNIQUE (sessionId, studentId)
+  UNIQUE (sessionId, deviceId)
+  UNIQUE (sessionId, fingerprint)
 
 PasswordResetToken
-  id, userId, token, expiresAt, usedAt
+  id, userId, token (UNIQUE), expiresAt, usedAt?
+  createdAt
 ```
 
 ---
@@ -175,17 +186,23 @@ PasswordResetToken
 All endpoints are prefixed with `/api`. Protected routes require `Authorization: Bearer <accessToken>`.
 Rate-limited auth endpoints: 5 requests/minute per IP.
 
+> 🔒 = requires valid access token · **LECTURER** / **STUDENT** = role restriction
+
+---
+
 ### Auth — `/api/auth`
 
 #### `POST /api/auth/register`
 Create a new lecturer or student account.
+
+> Students must use a `@student.funaab.edu.ng` email address.
 
 **Body**
 ```json
 {
   "role": "STUDENT",
   "fullName": "Chukwuemeka Obi",
-  "email": "c.obi@student.edu.ng",
+  "email": "c.obi@student.funaab.edu.ng",
   "password": "mypassword",
   "matricNumber": "2021/1234",
   "department": "Computer Science",
@@ -198,7 +215,7 @@ Create a new lecturer or student account.
 **Response `201`**
 ```json
 {
-  "user": { "id": "...", "role": "STUDENT", "fullName": "...", "email": "...", "level": 300, ... },
+  "user": { "id": "...", "role": "STUDENT", "fullName": "...", "email": "...", "level": 300 },
   "accessToken": "...",
   "refreshToken": "..."
 }
@@ -211,17 +228,13 @@ Login with email or matric number.
 
 **Body**
 ```json
-{ "identifier": "c.obi@student.edu.ng", "password": "mypassword" }
+{ "identifier": "c.obi@student.funaab.edu.ng", "password": "mypassword" }
 ```
 > `identifier` accepts email address or matric number.
 
 **Response `200`**
 ```json
-{
-  "user": { ... },
-  "accessToken": "...",
-  "refreshToken": "..."
-}
+{ "user": { ... }, "accessToken": "...", "refreshToken": "..." }
 ```
 
 ---
@@ -246,7 +259,7 @@ Request a password reset link. Always returns success to prevent email enumerati
 
 **Body**
 ```json
-{ "email": "c.obi@student.edu.ng" }
+{ "email": "c.obi@student.funaab.edu.ng" }
 ```
 
 **Response `200`**
@@ -276,7 +289,7 @@ Get the current authenticated user's profile.
 
 **Response `200`**
 ```json
-{ "user": { "id": "...", "role": "...", "fullName": "...", "email": "...", ... } }
+{ "user": { "id": "...", "role": "...", "fullName": "...", "email": "...", "level": 300 } }
 ```
 
 ---
@@ -330,7 +343,7 @@ Create a new course.
 
 **Response `201`**
 ```json
-{ "course": { "id": "...", "courseCode": "CSC301", "courseTitle": "...", "isArchived": false, ... } }
+{ "course": { "id": "...", "courseCode": "CSC301", "courseTitle": "...", "isArchived": false } }
 ```
 
 ---
@@ -350,14 +363,14 @@ List all courses belonging to the authenticated lecturer, including session coun
 ---
 
 #### `GET /api/courses/:id` 🔒
-Get a single course with its sessions list.
+Get a single course with its full sessions list.
 
 **Response `200`**
 ```json
 {
   "course": { "id": "...", "courseCode": "CSC301", ... },
   "sessions": [
-    { "id": "...", "createdAt": "...", "status": "CLOSED", "attendeeCount": 23 }
+    { "id": "...", "createdAt": "...", "status": "CLOSED", "_count": { "attendances": 23 } }
   ]
 }
 ```
@@ -384,7 +397,7 @@ Toggle the archived status of a course.
 
 **Response `200`**
 ```json
-{ "course": { "id": "...", "isArchived": true, ... } }
+{ "course": { "id": "...", "isArchived": true } }
 ```
 
 ---
@@ -399,8 +412,8 @@ Create a new attendance session. Generates a QR code and schedules auto-close.
 {
   "courseId": "uuid",
   "timeLimitMinutes": 30,
-  "latitude": 6.5244,
-  "longitude": 3.3792,
+  "latitude": 8.9833,
+  "longitude": 7.3833,
   "geofenceRadiusM": 50,
   "level": 300
 }
@@ -410,9 +423,9 @@ Create a new attendance session. Generates a QR code and schedules auto-close.
 **Response `201`**
 ```json
 {
-  "session": { "id": "...", "status": "ACTIVE", "expiresAt": "...", "level": 300, ... },
+  "session": { "id": "...", "status": "ACTIVE", "expiresAt": "...", "level": 300 },
   "qrCodeImage": "data:image/png;base64,...",
-  "attendUrl": "http://localhost:3000/attend/session-id"
+  "attendUrl": "https://attendly.vercel.app/attend/session-id"
 }
 ```
 
@@ -424,17 +437,13 @@ Get full session detail including attendee list and QR code image.
 **Response `200`**
 ```json
 {
-  "session": { "id": "...", "status": "ACTIVE", "level": 300, "course": { ... }, ... },
+  "session": { "id": "...", "status": "ACTIVE", "level": 300, "course": { ... } },
   "qrCodeImage": "data:image/png;base64,...",
-  "attendUrl": "http://localhost:3000/attend/session-id",
+  "attendUrl": "https://attendly.vercel.app/attend/session-id",
   "attendees": [
     {
-      "id": "...",
-      "fullName": "Chukwuemeka Obi",
-      "matricNumber": "2021/1234",
-      "department": "Computer Science",
-      "signedAt": "2025-03-25T10:15:00Z",
-      "distanceM": "12.50"
+      "id": "...", "fullName": "Chukwuemeka Obi", "matricNumber": "2021/1234",
+      "department": "Computer Science", "signedAt": "2025-03-25T10:15:00Z", "distanceM": "12.50"
     }
   ]
 }
@@ -447,13 +456,13 @@ Manually close an active session before its timer expires.
 
 **Response `200`**
 ```json
-{ "id": "...", "status": "CLOSED", "closedAt": "...", ... }
+{ "id": "...", "status": "CLOSED", "closedAt": "..." }
 ```
 
 ---
 
 #### `GET /api/sessions/:id/stream` 🔒 LECTURER
-Server-Sent Events stream. Emits a new event each time a student signs in.
+Server-Sent Events stream. Emits a new event each time a student signs in during an active session.
 
 > SSE does not support custom headers. Pass the access token as a query parameter:
 > `GET /api/sessions/:id/stream?token=<accessToken>`
@@ -486,16 +495,19 @@ Get public session info for the student attend flow (no attendee list, no QR ima
 ### Attendance — `/api/attendance`
 
 #### `POST /api/attendance` 🔒 STUDENT
-Sign attendance for a session. Verifies GPS proximity and level restriction.
+Sign attendance for a session. Verifies GPS proximity, level restriction, and device uniqueness.
 
 **Body**
 ```json
 {
   "sessionId": "uuid",
-  "latitude": 6.5251,
-  "longitude": 3.3799
+  "latitude": 8.9841,
+  "longitude": 7.3840,
+  "deviceId": "persistent-browser-uuid",
+  "fingerprint": "a3f9c12b"
 }
 ```
+> `deviceId` and `fingerprint` are optional but strongly recommended. They prevent multiple students from signing in from the same physical device.
 
 **Response `201`**
 ```json
@@ -503,12 +515,14 @@ Sign attendance for a session. Verifies GPS proximity and level restriction.
 ```
 
 **Error responses**
+
 | Status | Reason |
 |---|---|
 | `400` | Session is closed or expired |
-| `400` | Student is outside geofence radius |
-| `403` | Student's level does not match session level restriction |
+| `400` | Student is outside the geofence radius |
+| `403` | Student's level does not match the session's level restriction |
 | `409` | Student has already signed for this session |
+| `409` | This device has already been used to sign attendance for this session |
 
 ---
 
@@ -523,11 +537,9 @@ Get the authenticated student's full attendance history.
 {
   "history": [
     {
-      "id": "...",
-      "signedAt": "...",
+      "id": "...", "signedAt": "...",
       "session": {
-        "id": "...",
-        "createdAt": "...",
+        "id": "...", "createdAt": "...",
         "course": { "courseCode": "CSC301", "courseTitle": "..." }
       }
     }
@@ -543,7 +555,7 @@ Get aggregate attendance records for a course — per-student stats across all s
 **Response `200`**
 ```json
 {
-  "course": { "id": "...", "courseCode": "CSC301", ... },
+  "course": { "id": "...", "courseCode": "CSC301" },
   "sessions": [
     { "id": "...", "createdAt": "...", "status": "CLOSED", "attendeeCount": 23 }
   ],
@@ -571,24 +583,38 @@ Name,Matric Number,Department,Gender,Sessions Attended,Total Sessions,Percentage
 
 ---
 
+## Device Sign-in Protection
+
+Each attendance record captures two device signals to prevent a single device from being used by multiple students in the same session:
+
+| Signal | How it works | Survives |
+|---|---|---|
+| **Device UUID** (`deviceId`) | UUID generated on first visit, stored in `localStorage` | Normal browser sessions |
+| **Browser fingerprint** (`fingerprint`) | FNV-1a hash of user agent, screen, timezone, hardware concurrency, platform | Incognito mode, cleared localStorage |
+
+Both are optional fields on the API — if omitted, only the per-student uniqueness constraint applies.
+
+---
+
 ## Development Progress
 
 | Sprint | Scope | Status |
 |---|---|---|
-| **Sprint 1** | Scaffolding, DB schema, design system, landing page, auth pages, dashboard shell | **Done** |
-| **Sprint 2** | Course CRUD, lecturer dashboard, course detail + analytics, profile pages | **Done** |
-| **Sprint 3** | Session creation (GPS), QR generation, WhatsApp share, student attend flow, geofence verification | **Done** |
-| **Sprint 4** | Live SSE attendee list, active session page, session auto-close, student history | **Done** |
-| **Sprint 5** | Closed session record, CSV export, password change, level enforcement, role guards, error boundary | **Done** |
-| **Sprint 6** | E2E testing, performance testing, security audit, production deploy | Pending |
+| **Sprint 1** | Scaffolding, DB schema, design system, landing page, auth pages, dashboard shell | Done |
+| **Sprint 2** | Course CRUD, lecturer dashboard, course detail + analytics, profile pages | Done |
+| **Sprint 3** | Session creation (GPS), QR generation, WhatsApp share, student attend flow, geofence verification | Done |
+| **Sprint 4** | Live SSE attendee list, active session page, session auto-close, student history | Done |
+| **Sprint 5** | Closed session record, CSV export, password change, level enforcement, role guards, error boundary | Done |
+| **Sprint 6** | Device sign-in protection, UI/UX polish, copy review, email domain enforcement, bug fixes | Done |
+| **Sprint 7** | E2E testing, performance testing, security audit | Pending |
 
 ---
 
 ## Design System
 
-- **Primary color** — `#4A7C2E` (forest green)
+- **Primary color** — `#4A7C2E` (forest green), gradient `#5E9438 → #3D6825`
 - **Font** — Inter
-- **Icons** — Lucide React (no emojis)
+- **Icons** — Lucide React
 - **Breakpoints** — mobile `< 768px` · tablet `768–1024px` · desktop `> 1024px`
 - **Principle** — mobile-first, minimalist, generous whitespace
 
