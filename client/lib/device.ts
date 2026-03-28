@@ -34,9 +34,12 @@ function getWebGLSignal(): string {
 // userAgent and language are intentionally excluded: they differ between
 // Chrome/Firefox/Safari on the same phone, which would allow cross-browser bypass.
 function generateFingerprint(): string {
+  // devicePixelRatio is rounded to 1dp to avoid float precision differences
+  // between browsers on the same device (e.g. Chrome: 3, Firefox: 2.9999999)
+  const dpr = Math.round((window.devicePixelRatio ?? 1) * 10) / 10;
   const parts = [
     `${screen.width}x${screen.height}x${screen.colorDepth}x${screen.pixelDepth}`,
-    String(window.devicePixelRatio ?? 1),
+    String(dpr),
     String(navigator.hardwareConcurrency ?? 0),
     String(navigator.maxTouchPoints ?? 0),
     Intl.DateTimeFormat().resolvedOptions().timeZone,

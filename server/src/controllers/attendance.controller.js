@@ -6,7 +6,8 @@ async function sign(req, res, next) {
     const errors = validationResult(req);
     if (!errors.isEmpty()) return res.status(422).json({ errors: errors.array() });
 
-    const result = await attendanceService.sign(req.user.id, req.body);
+    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip;
+    const result = await attendanceService.sign(req.user.id, { ...req.body, ipAddress: ip });
     res.status(201).json(result);
   } catch (err) {
     next(err);

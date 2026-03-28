@@ -1,9 +1,18 @@
+const crypto = require('crypto');
 const prisma = require('../config/db');
 const { haversineDistance } = require('../utils/haversine');
 const { eventEmitter } = require('./events');
 
+// Combine hardware fingerprint + IP into one hash so both must match for a
+// conflict. Uses SHA-256 truncated to 16 hex chars (same width as client hash).
+function combineFingerprint(fingerprint, ipAddress) {
+  if (!fingerprint && !ipAddress) return null;
+  const input = `${fingerprint || ''}|${ipAddress || ''}`;
+  return crypto.createHash('sha256').update(input).digest('hex').slice(0, 16);
+}
+
 async function sign(studentId, data) {
-  const { sessionId, latitude, longitude, deviceId, fingerprint } = data;
+  const { sessionId, latitude, longitude, deviceId, fingerprint, ipAddress } = data;
 
   const session = await prisma.session.findUnique({ where: { id: sessionId } });
   if (!session) {
@@ -85,9 +94,10 @@ async function sign(studentId, data) {
     }
   }
 
-  if (fingerprint) {
+  const combinedFingerprint = combineFingerprint(fingerprint, ipAddress);
+  if (combinedFingerprint) {
     const fpConflict = await prisma.attendance.findUnique({
-      where: { sessionId_fingerprint: { sessionId, fingerprint } },
+      where: { sessionId_fingerprint: { sessionId, fingerprint: combinedFingerprint } },
     });
     if (fpConflict) {
       const err = new Error('Attendance has already been signed from this device for this session');
@@ -101,7 +111,8 @@ async function sign(studentId, data) {
       sessionId,
       studentId,
       deviceId: deviceId || null,
-      fingerprint: fingerprint || null,
+      fingerprint: combinedFingerprint,
+      ipAddress: ipAddress || null,
       latitude,
       longitude,
       distanceM: Math.round(distance * 100) / 100,
