@@ -31,7 +31,7 @@ export default function LandingPage() {
           </h1>
           <p className={styles.heroSubtitle}>
             Lecturers create a session, share a QR code via WhatsApp,
-            and students scan to confirm — verified by GPS proximity.
+            Students scan to confirm. GPS verifies they are in the room.
             No hardware. No roll calls. No apps to install.
           </p>
           <div className={styles.heroCtas}>
@@ -59,7 +59,7 @@ export default function LandingPage() {
             <div className={styles.heroCardBody}>
               <div className={styles.qrMock}>
                 <div className={styles.qrGrid} />
-                <div className={styles.qrLabel}>CSC 401 — Scan to attend</div>
+                <div className={styles.qrLabel}>CSC 401: Scan to attend</div>
               </div>
               <div className={styles.attendeeList}>
                 {['Amina B.', 'Chukwuemeka O.', 'Fatima A.', 'Ibrahim D.'].map((name, i) => (
@@ -94,7 +94,7 @@ export default function LandingPage() {
               {
                 number: '02',
                 title: 'Share the QR via WhatsApp',
-                desc: 'A unique QR code is generated. Share it to your class group with one tap — no projector needed.',
+                desc: 'A unique QR code is generated. Share it to your class group with one tap. No projector needed.',
               },
               {
                 number: '03',

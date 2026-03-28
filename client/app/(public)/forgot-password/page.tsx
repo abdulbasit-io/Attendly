@@ -32,13 +32,12 @@ export default function ForgotPasswordPage() {
       <aside className={styles.panel}>
         <span className={styles.panelLogo}>Attendly</span>
         <div className={styles.panelContent}>
-          <h2 className={styles.panelHeading}>Reset your password</h2>
+          <h2 className={styles.panelHeading}>Locked out?</h2>
           <p className={styles.panelSubtitle}>
-            Enter the email address associated with your account and we&apos;ll
-            send you a reset link.
+            Enter your email and we will send you a link to reset your password.
           </p>
         </div>
-        <span className={styles.panelFooter}>Attendly — Attendance as simple as a single scan.</span>
+        <span className={styles.panelFooter}>One scan. Attendance done.</span>
       </aside>
 
       <main className={styles.formPanel}>

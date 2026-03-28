@@ -81,33 +81,16 @@ function useSSEAttendees(sessionId: string, initialAttendees: Attendee[], isActi
 // ── QR share helpers ──────────────────────────────────────────
 function shareToWhatsApp(attendUrl: string, courseTitle: string) {
   const text = encodeURIComponent(
-    `Attendance is open for ${courseTitle}!\nScan to sign in: ${attendUrl}`
+    `Attendance is open for ${courseTitle}!\nTap to sign in: ${attendUrl}`
   );
-  window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  window.open(`https://wa.me/?text=${text}`, '_blank');
 }
 
-async function downloadQR(imageBase64: string, courseCode: string) {
+function downloadQR(imageBase64: string, courseCode: string) {
   const link = document.createElement('a');
   link.href = imageBase64;
   link.download = `attendance-qr-${courseCode}.png`;
   link.click();
-}
-
-async function shareQRNative(imageBase64: string, attendUrl: string, courseTitle: string) {
-  if (!navigator.share) return false;
-  try {
-    const res = await fetch(imageBase64);
-    const blob = await res.blob();
-    const file = new File([blob], 'attendance-qr.png', { type: 'image/png' });
-    await navigator.share({
-      title: `Attendance — ${courseTitle}`,
-      text: `Scan to sign attendance for ${courseTitle}`,
-      files: [file],
-    });
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 // ── Client-side CSV export ────────────────────────────────────
@@ -304,13 +287,9 @@ export default function SessionDetailPage() {
     }
   }
 
-  async function handleShare() {
-    if (!qrCodeImage || !attendUrl) return;
-    setShareError('');
-    const native = await shareQRNative(qrCodeImage, attendUrl, courseTitle);
-    if (!native) {
-      shareToWhatsApp(attendUrl, courseTitle);
-    }
+  function handleShare() {
+    if (!attendUrl) return;
+    shareToWhatsApp(attendUrl, courseTitle);
   }
 
   if (loading) {
@@ -431,6 +410,19 @@ export default function SessionDetailPage() {
                   Share to WhatsApp
                 </button>
                 <button
+                  className="btn btn-outline btn-sm"
+                  onClick={() => {
+                    if (!attendUrl) return;
+                    navigator.clipboard.writeText(attendUrl).then(() => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    });
+                  }}
+                >
+                  {copied ? <Check size={14} /> : <Copy size={14} />}
+                  {copied ? 'Copied!' : 'Copy link'}
+                </button>
+                <button
                   className="btn btn-ghost btn-sm btn-icon"
                   onClick={() => downloadQR(qrCodeImage, courseCode)}
                   aria-label="Download QR"
@@ -444,24 +436,9 @@ export default function SessionDetailPage() {
           {/* Attend URL */}
           {attendUrl && (
             <div className={styles.attendUrlCard}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-                  Direct link
-                </span>
-                <button
-                  className={`btn btn-ghost btn-sm ${styles.copyBtn}`}
-                  onClick={() => {
-                    navigator.clipboard.writeText(attendUrl).then(() => {
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                    });
-                  }}
-                  aria-label="Copy link"
-                >
-                  {copied ? <Check size={13} /> : <Copy size={13} />}
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
+              <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+                Direct link
+              </span>
               <code className={styles.attendUrl}>{attendUrl}</code>
             </div>
           )}

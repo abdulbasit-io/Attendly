@@ -51,13 +51,12 @@ function LoginForm() {
             Welcome back
           </h2>
           <p className={styles.panelSubtitle}>
-            Sign in to manage your courses, start attendance sessions,
-            and track your records.
+            Manage your courses, run sessions, and track records.
           </p>
           <div className={styles.panelSteps}>
             {[
-              'Lecturers — manage courses and start live sessions',
-              'Students — view your attendance history and records',
+              'Lecturers: start sessions and view live attendance',
+              'Students: sign in and track your attendance history',
             ].map((text) => (
               <div key={text} className={styles.panelStep}>
                 <div className={styles.panelStepDot} />
@@ -66,7 +65,7 @@ function LoginForm() {
             ))}
           </div>
         </div>
-        <span className={styles.panelFooter}>Attendly — Attendance as simple as a single scan.</span>
+        <span className={styles.panelFooter}>One scan. Attendance done.</span>
       </aside>
 
       {/* Right form panel */}

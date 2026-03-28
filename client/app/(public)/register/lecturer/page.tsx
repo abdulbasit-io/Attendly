@@ -71,18 +71,17 @@ export default function RegisterLecturerPage() {
         <span className={styles.panelLogo}>Attendly</span>
         <div className={styles.panelContent}>
           <h2 className={styles.panelHeading}>
-            Built for lecturers who value their time
+            Stop calling names.
           </h2>
           <p className={styles.panelSubtitle}>
-            Stop calling names. Create a session, share a QR, and watch
-            attendance mark itself — verified by GPS.
+            Create a session, share a QR, and watch attendance mark itself. GPS-verified.
           </p>
           <div className={styles.panelSteps}>
             {[
               'Create courses and manage sessions',
               'Share QR codes via WhatsApp in one tap',
-              'Get live attendance updates as students sign in',
-              'Export records to CSV for your department',
+              'Watch students sign in live',
+              'Export records to CSV',
             ].map((text) => (
               <div key={text} className={styles.panelStep}>
                 <div className={styles.panelStepDot} />
@@ -91,7 +90,7 @@ export default function RegisterLecturerPage() {
             ))}
           </div>
         </div>
-        <span className={styles.panelFooter}>Attendly — Attendance as simple as a single scan.</span>
+        <span className={styles.panelFooter}>One scan. Attendance done.</span>
       </aside>
 
       {/* Right form panel */}

@@ -95,7 +95,7 @@ function NewSessionContent() {
         <div className="page-header-left">
           <h1 className="page-title">Start Session</h1>
           <p className="page-subtitle">
-            {course ? `${course.courseCode} — ${course.courseTitle}` : 'Configure your attendance session'}
+            {course ? `${course.courseCode}: ${course.courseTitle}` : 'Configure your attendance session'}
           </p>
         </div>
       </div>

@@ -153,7 +153,7 @@ export default function AttendPage() {
           </div>
           <h2 className={styles.stateTitle}>Getting your location</h2>
           <p className={styles.stateSubtitle}>
-            Please allow location access when prompted. This verifies you are in the classroom.
+            Allow location access when prompted. This confirms you are physically in class.
           </p>
           <div className={styles.gpsProgress}>
             <Loader size={18} className={styles.spin} />
@@ -271,7 +271,7 @@ export default function AttendPage() {
           </div>
           <h2 className={styles.stateTitle}>Attendance Confirmed</h2>
           <div className={styles.successDetails}>
-            <div className={styles.successCourse}>{sessionInfo.courseCode} — {sessionInfo.courseTitle}</div>
+            <div className={styles.successCourse}>{sessionInfo.courseCode}: {sessionInfo.courseTitle}</div>
             <div className={styles.successName}>{user.fullName}</div>
             {user.matricNumber && (
               <div className={styles.successMeta}>{user.matricNumber}</div>

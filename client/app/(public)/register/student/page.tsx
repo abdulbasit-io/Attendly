@@ -83,18 +83,17 @@ export default function RegisterStudentPage() {
         <span className={styles.panelLogo}>Attendly</span>
         <div className={styles.panelContent}>
           <h2 className={styles.panelHeading}>
-            Never miss a class again
+            Sign attendance in seconds.
           </h2>
           <p className={styles.panelSubtitle}>
-            When your lecturer shares the QR, scan it, confirm your location,
-            and attendance is marked. One tap, done.
+            Your lecturer shares a QR. You scan, confirm your location, and you're done.
           </p>
           <div className={styles.panelSteps}>
             {[
-              'Scan the QR code shared in your WhatsApp group',
+              'Scan the QR from your WhatsApp group',
               'Your name and matric number are auto-filled',
-              'GPS verifies you are in the classroom',
-              'One tap to confirm — attendance recorded instantly',
+              'GPS confirms you are in the classroom',
+              'One tap. Attendance recorded.',
             ].map((text) => (
               <div key={text} className={styles.panelStep}>
                 <div className={styles.panelStepDot} />
@@ -103,7 +102,7 @@ export default function RegisterStudentPage() {
             ))}
           </div>
         </div>
-        <span className={styles.panelFooter}>Attendly — Attendance as simple as a single scan.</span>
+        <span className={styles.panelFooter}>One scan. Attendance done.</span>
       </aside>
 
       {/* Right form panel */}

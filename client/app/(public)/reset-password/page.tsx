@@ -78,7 +78,7 @@ function ResetPasswordForm() {
             in to Attendly.
           </p>
         </div>
-        <span className={styles.panelFooter}>Attendly — Attendance as simple as a single scan.</span>
+        <span className={styles.panelFooter}>One scan. Attendance done.</span>
       </aside>
 
       <main className={styles.formPanel}>

@@ -3,8 +3,8 @@ import '../styles/globals.css';
 import '../styles/components.css';
 
 export const metadata: Metadata = {
-  title: 'Attendly — Attendance as simple as a single scan',
-  description: 'Location-smart, QR-based attendance system for universities. Lecturers create sessions, students scan to confirm — verified by GPS proximity.',
+  title: 'Attendly: Attendance as simple as a single scan',
+  description: 'Location-smart, QR-based attendance system for universities. Lecturers create sessions, Students scan to confirm. GPS verifies they are in the room.',
   keywords: ['attendance', 'university', 'QR code', 'GPS'],
   openGraph: {
     title: 'Attendly',
