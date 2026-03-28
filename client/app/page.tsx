@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { MapPin, Zap, Clock, Users, BarChart2, Smartphone } from 'lucide-react';
 import styles from './landing.module.css';
 
 export default function LandingPage() {
@@ -120,31 +121,38 @@ export default function LandingPage() {
           <div className={styles.featuresGrid}>
             {[
               {
+                icon: <MapPin size={20} />,
                 title: 'Location-verified',
                 desc: 'GPS geofencing ensures only physically present students can sign in. No proxies, no remote check-ins.',
               },
               {
+                icon: <Zap size={20} />,
                 title: 'One scan, done',
                 desc: "Students tap once. Name and matric number are auto-filled from their account. No typing, no delays.",
               },
               {
+                icon: <Clock size={20} />,
                 title: 'Time-bound sessions',
                 desc: "Sessions auto-close after your set duration. Late arrivals are locked out automatically.",
               },
               {
+                icon: <Users size={20} />,
                 title: 'Live attendee list',
                 desc: "Watch students sign in live during the session. Real-time updates as they scan.",
               },
               {
+                icon: <BarChart2 size={20} />,
                 title: 'Course analytics',
                 desc: "Per-session records, cumulative stats, per-student attendance percentage. Export to CSV anytime.",
               },
               {
+                icon: <Smartphone size={20} />,
                 title: 'Zero infrastructure',
                 desc: "No beacons, no dedicated hardware, no app to install. Works in any mobile browser.",
               },
             ].map((feature) => (
               <div key={feature.title} className={styles.featureCard}>
+                <div className={styles.featureIcon}>{feature.icon}</div>
                 <h3 className={styles.featureTitle}>{feature.title}</h3>
                 <p className={styles.featureDesc}>{feature.desc}</p>
               </div>

@@ -86,6 +86,11 @@
   --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
   --shadow-lg: 0 10px 15px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.05);
   --shadow-xl: 0 20px 25px rgba(0,0,0,0.08), 0 8px 10px rgba(0,0,0,0.04);
+  --shadow-primary: 0 4px 14px rgba(74, 124, 46, 0.30);
+  --shadow-primary-lg: 0 8px 24px rgba(74, 124, 46, 0.22);
+
+  /* Brand gradient */
+  --gradient-primary: linear-gradient(160deg, #5E9438 0%, #3D6825 100%);
 
   /* Layout */
   --sidebar-width:    240px;
