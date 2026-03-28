@@ -18,13 +18,35 @@ async function sign(studentId, data) {
     throw err;
   }
 
+  const student = await prisma.user.findUnique({
+    where: { id: studentId },
+    select: { id: true, fullName: true, matricNumber: true, department: true, level: true },
+  });
+
   if (session.level !== null) {
-    const student = await prisma.user.findUnique({
-      where: { id: studentId },
-      select: { level: true },
-    });
     if (student?.level !== session.level) {
       const err = new Error(`This session is for ${session.level}L students only`);
+      err.status = 403;
+      throw err;
+    }
+  }
+
+  // Check enrollment list if the course has one
+  const hasEnrollment = await prisma.courseEnrollment.findFirst({
+    where: { courseId: session.courseId },
+    select: { id: true },
+  });
+  if (hasEnrollment) {
+    if (!student?.matricNumber) {
+      const err = new Error('Your account has no matric number on file. Contact your lecturer.');
+      err.status = 403;
+      throw err;
+    }
+    const enrolled = await prisma.courseEnrollment.findUnique({
+      where: { courseId_matricNumber: { courseId: session.courseId, matricNumber: student.matricNumber } },
+    });
+    if (!enrolled) {
+      const err = new Error('You are not on the enrollment list for this course.');
       err.status = 403;
       throw err;
     }
@@ -74,11 +96,6 @@ async function sign(studentId, data) {
     }
   }
 
-  const student = await prisma.user.findUnique({
-    where: { id: studentId },
-    select: { id: true, fullName: true, matricNumber: true, department: true },
-  });
-
   const attendance = await prisma.attendance.create({
     data: {
       sessionId,
@@ -99,6 +116,7 @@ async function sign(studentId, data) {
     department: student.department,
     signedAt: attendance.signedAt,
     distanceM: attendance.distanceM,
+    markedManually: false,
   };
   eventEmitter.emit(`attendance:${sessionId}`, eventPayload);
 
@@ -193,4 +211,66 @@ async function exportCsv(courseId, lecturerId) {
   return header + rows.join('\n');
 }
 
-module.exports = { sign, history, byCourse, exportCsv };
+async function signManually(lecturerId, sessionId, studentId) {
+  // Verify session belongs to this lecturer and is active
+  const session = await prisma.session.findFirst({
+    where: { id: sessionId, lecturerId },
+  });
+  if (!session) {
+    const err = new Error('Session not found or access denied');
+    err.status = 404;
+    throw err;
+  }
+  if (session.status === 'CLOSED' || session.expiresAt < new Date()) {
+    const err = new Error('Cannot mark attendance on a closed or expired session');
+    err.status = 400;
+    throw err;
+  }
+
+  // Verify student exists
+  const student = await prisma.user.findUnique({
+    where: { id: studentId, role: 'STUDENT' },
+    select: { id: true, fullName: true, matricNumber: true, department: true },
+  });
+  if (!student) {
+    const err = new Error('Student not found');
+    err.status = 404;
+    throw err;
+  }
+
+  // Prevent duplicates
+  const existing = await prisma.attendance.findUnique({
+    where: { sessionId_studentId: { sessionId, studentId } },
+  });
+  if (existing) {
+    const err = new Error('Student has already been marked present for this session');
+    err.status = 409;
+    throw err;
+  }
+
+  const attendance = await prisma.attendance.create({
+    data: {
+      sessionId,
+      studentId,
+      markedManually: true,
+      latitude: session.latitude,
+      longitude: session.longitude,
+      distanceM: 0,
+    },
+  });
+
+  const eventPayload = {
+    id: student.id,
+    fullName: student.fullName,
+    matricNumber: student.matricNumber,
+    department: student.department,
+    signedAt: attendance.signedAt,
+    distanceM: attendance.distanceM,
+    markedManually: true,
+  };
+  eventEmitter.emit(`attendance:${sessionId}`, eventPayload);
+
+  return { attendance, message: 'Student marked present successfully' };
+}
+
+module.exports = { sign, signManually, history, byCourse, exportCsv };

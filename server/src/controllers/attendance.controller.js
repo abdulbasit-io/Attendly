@@ -42,4 +42,16 @@ async function exportCsv(req, res, next) {
   }
 }
 
-module.exports = { sign, history, byCourse, exportCsv };
+async function signManually(req, res, next) {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) return res.status(422).json({ errors: errors.array() });
+
+    const result = await attendanceService.signManually(req.user.id, req.params.sessionId, req.body.studentId);
+    res.status(201).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { sign, signManually, history, byCourse, exportCsv };

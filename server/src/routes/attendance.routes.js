@@ -20,6 +20,13 @@ router.post('/',
 // Student: my attendance history
 router.get('/history', auth, requireRole('STUDENT'), attendanceController.history);
 
+// Lecturer: manually mark a student present for a session
+router.post('/sessions/:sessionId/manual',
+  auth, requireRole('LECTURER'),
+  [body('studentId').isUUID()],
+  attendanceController.signManually
+);
+
 // Lecturer: records for a course
 router.get('/course/:courseId', auth, requireRole('LECTURER'), attendanceController.byCourse);
 

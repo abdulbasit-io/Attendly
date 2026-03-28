@@ -50,10 +50,23 @@ model Course {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  lecturer  User      @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
-  sessions  Session[]
+  lecturer    User               @relation(fields: [lecturerId], references: [id], onDelete: Cascade)
+  sessions    Session[]
+  enrollments CourseEnrollment[]
 
   @@unique([lecturerId, courseCode])
+}
+
+model CourseEnrollment {
+  id           String   @id @default(uuid())
+  courseId     String
+  matricNumber String
+  studentName  String?
+  createdAt    DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, matricNumber])
 }
 
 model Session {
@@ -77,15 +90,16 @@ model Session {
 }
 
 model Attendance {
-  id        String   @id @default(uuid())
-  sessionId String
-  studentId String
-  deviceId    String?
-  fingerprint String?
-  latitude    Decimal  @db.Decimal(10, 7)
-  longitude   Decimal  @db.Decimal(10, 7)
-  distanceM   Decimal  @db.Decimal(8, 2)
-  signedAt    DateTime @default(now())
+  id             String   @id @default(uuid())
+  sessionId      String
+  studentId      String
+  deviceId       String?
+  fingerprint    String?
+  markedManually Boolean  @default(false)
+  latitude       Decimal  @db.Decimal(10, 7)
+  longitude      Decimal  @db.Decimal(10, 7)
+  distanceM      Decimal  @db.Decimal(8, 2)
+  signedAt       DateTime @default(now())
 
   session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)

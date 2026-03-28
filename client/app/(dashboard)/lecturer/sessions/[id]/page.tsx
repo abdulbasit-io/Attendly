@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {
   Share2, Download, StopCircle, Users, Clock,
   CheckCircle, Wifi, WifiOff, FileDown, MapPin, Timer, Copy, Check,
+  UserPlus, Search, Pencil,
 } from 'lucide-react';
 import { useSession, Attendee } from '@/lib/hooks';
 import { api, ApiError } from '@/lib/api';
@@ -75,7 +76,14 @@ function useSSEAttendees(sessionId: string, initialAttendees: Attendee[], isActi
     };
   }, [sessionId, isActive]);
 
-  return { attendees, connected };
+  function addAttendee(a: Attendee) {
+    setAttendees((prev) => {
+      if (prev.find((x) => x.id === a.id)) return prev;
+      return [a, ...prev];
+    });
+  }
+
+  return { attendees, connected, addAttendee };
 }
 
 // ── QR share helpers ──────────────────────────────────────────
@@ -209,11 +217,160 @@ function AttendeeRow({ attendee, index }: { attendee: Attendee; index: number })
         {time}
       </td>
       <td>
-        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
-          {Math.round(Number(attendee.distanceM))}m
-        </span>
+        {attendee.markedManually ? (
+          <span className="badge badge-amber" style={{ fontSize: 'var(--font-size-xs)' }}>
+            <Pencil size={9} /> Manual
+          </span>
+        ) : (
+          <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
+            {Math.round(Number(attendee.distanceM))}m
+          </span>
+        )}
       </td>
     </tr>
+  );
+}
+
+// ── Mark Present modal ────────────────────────────────────────
+function MarkPresentModal({ sessionId, onMarked, onCancel }: {
+  sessionId: string;
+  onMarked: (attendee: Attendee) => void;
+  onCancel: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<{ id: string; fullName: string; matricNumber: string | null; department: string | null; level: number | null }[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [marking, setMarking] = useState<string | null>(null);
+  const [successIds, setSuccessIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState('');
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+  useEffect(() => {
+    if (query.trim().length < 2) { setResults([]); return; }
+    const timeout = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const token = localStorage.getItem('accessToken');
+        const res = await fetch(`${API_URL}/api/users/search?q=${encodeURIComponent(query)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        setResults(data.students ?? []);
+      } catch { /* ignore */ } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [query]);
+
+  async function handleMark(studentId: string) {
+    setMarking(studentId);
+    setError('');
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${API_URL}/api/attendance/sessions/${sessionId}/manual`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ studentId }),
+      });
+      if (!res.ok) {
+        const body = await res.json();
+        setError(body.error || 'Failed to mark student');
+        return;
+      }
+      const student = results.find((s) => s.id === studentId)!;
+      setSuccessIds((prev) => new Set([...prev, studentId]));
+      onMarked({
+        id: student.id,
+        fullName: student.fullName,
+        matricNumber: student.matricNumber,
+        department: student.department,
+        signedAt: new Date().toISOString(),
+        distanceM: 0,
+        markedManually: true,
+      });
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setMarking(null);
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+        <div className="modal-header">
+          <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)' }}>
+            Mark Student Present
+          </h2>
+        </div>
+        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+            Search by name or matric number for students without phone access.
+          </p>
+          <div style={{ position: 'relative' }}>
+            <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-tertiary)' }} />
+            <input
+              className="input"
+              style={{ paddingLeft: 36 }}
+              placeholder="Name or matric number…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoFocus
+            />
+          </div>
+          {error && <div className="alert alert-error" style={{ fontSize: 'var(--font-size-sm)' }}>{error}</div>}
+          {searching && (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-4)' }}>
+              <div className="spinner" />
+            </div>
+          )}
+          {results.length > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', maxHeight: 280, overflowY: 'auto' }}>
+              {results.map((student) => {
+                const done = successIds.has(student.id);
+                return (
+                  <div key={student.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
+                    background: done ? 'var(--color-success-light)' : 'var(--color-surface)',
+                    border: '1px solid var(--color-border)',
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 'var(--font-weight-medium)', fontSize: 'var(--font-size-sm)' }}>
+                        {student.fullName}
+                      </div>
+                      <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
+                        {student.matricNumber || 'No matric'}{student.department ? ` · ${student.department}` : ''}
+                      </div>
+                    </div>
+                    {done ? (
+                      <CheckCircle size={18} color="var(--color-success)" />
+                    ) : (
+                      <button
+                        className={`btn btn-primary btn-sm${marking === student.id ? ' btn-loading' : ''}`}
+                        disabled={!!marking}
+                        onClick={() => handleMark(student.id)}
+                      >
+                        {marking === student.id ? '' : 'Mark Present'}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {query.trim().length >= 2 && !searching && results.length === 0 && (
+            <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+              No registered students found for "{query}"
+            </p>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-ghost" onClick={onCancel}>Close</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -260,10 +417,11 @@ export default function SessionDetailPage() {
   const { session, qrCodeImage, attendUrl, attendees: initialAttendees, loading, error, refetch } = useSession(sessionId);
   const isActive = session?.status === 'ACTIVE';
   const { secondsLeft, display: timerDisplay } = useCountdown(session?.expiresAt ?? null);
-  const { attendees, connected } = useSSEAttendees(sessionId, initialAttendees, isActive);
+  const { attendees, connected, addAttendee } = useSSEAttendees(sessionId, initialAttendees, isActive);
 
   const [ending, setEnding] = useState(false);
   const [showEndModal, setShowEndModal] = useState(false);
+  const [showMarkModal, setShowMarkModal] = useState(false);
   const [shareError, setShareError] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -455,9 +613,15 @@ export default function SessionDetailPage() {
               <span className="badge badge-brand">{attendees.length}</span>
             </div>
             {isActive ? (
-              <div className={`${styles.sseIndicator} ${connected ? styles.sseConnected : styles.sseDisconnected}`}>
-                {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
-                {connected ? 'Live' : 'Reconnecting…'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                <button className="btn btn-primary btn-sm" onClick={() => setShowMarkModal(true)}>
+                  <UserPlus size={13} />
+                  Mark Present
+                </button>
+                <div className={`${styles.sseIndicator} ${connected ? styles.sseConnected : styles.sseDisconnected}`}>
+                  {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
+                  {connected ? 'Live' : 'Reconnecting…'}
+                </div>
               </div>
             ) : attendees.length > 0 ? (
               <button
@@ -509,6 +673,15 @@ export default function SessionDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Mark present modal */}
+      {showMarkModal && (
+        <MarkPresentModal
+          sessionId={sessionId}
+          onMarked={(attendee) => addAttendee(attendee)}
+          onCancel={() => setShowMarkModal(false)}
+        />
+      )}
 
       {/* End session modal */}
       {showEndModal && (

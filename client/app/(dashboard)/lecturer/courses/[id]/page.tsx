@@ -14,13 +14,17 @@ import {
   CheckCircle,
   XCircle,
   Download,
+  UserCheck,
+  Upload,
+  Trash2,
+  AlertCircle,
 } from 'lucide-react';
-import { useCourse, useCourseAttendance, Session, AttendanceRecord } from '@/lib/hooks';
+import { useCourse, useCourseAttendance, useEnrollment, Session, AttendanceRecord, EnrollmentEntry } from '@/lib/hooks';
 import { api, ApiError } from '@/lib/api';
 import styles from './course.module.css';
 
 // ── Tab type ──────────────────────────────────────────────────
-type Tab = 'sessions' | 'analytics';
+type Tab = 'sessions' | 'analytics' | 'enrollment';
 
 // ── Session row ───────────────────────────────────────────────
 function SessionRow({ session }: { session: Session & { _count?: { attendances: number } } }) {
@@ -65,6 +69,192 @@ function SessionRow({ session }: { session: Session & { _count?: { attendances: 
         </Link>
       </td>
     </tr>
+  );
+}
+
+// ── Enrollment tab ────────────────────────────────────────────
+function EnrollmentTab({ courseId }: { courseId: string }) {
+  const { enrollments, total, loading, error, refetch } = useEnrollment(courseId);
+  const [csvText, setCsvText] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [importError, setImportError] = useState('');
+  const [importSuccess, setImportSuccess] = useState('');
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+  function parseCSV(text: string): { matricNumber: string; studentName: string }[] {
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    const students: { matricNumber: string; studentName: string }[] = [];
+    for (const line of lines) {
+      if (line.toLowerCase().startsWith('matric')) continue; // skip header
+      const parts = line.split(',').map((p) => p.trim().replace(/^"|"$/g, ''));
+      const matricNumber = parts[0];
+      const studentName = parts[1] || '';
+      if (matricNumber) students.push({ matricNumber, studentName });
+    }
+    return students;
+  }
+
+  async function handleImport() {
+    setImportError('');
+    setImportSuccess('');
+    const students = parseCSV(csvText);
+    if (students.length === 0) {
+      setImportError('No valid matric numbers found. Each line should start with a matric number.');
+      return;
+    }
+    setImporting(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const res = await fetch(`${API_URL}/api/courses/${courseId}/enrollment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ students }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setImportError(data.error || 'Import failed'); return; }
+      setImportSuccess(`Imported ${data.imported} student${data.imported !== 1 ? 's' : ''}. Total enrolled: ${data.total}.`);
+      setCsvText('');
+      refetch();
+    } catch {
+      setImportError('Network error. Please try again.');
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function handleClear() {
+    if (!confirm('Remove all enrolled students from this course? Attendance signing restrictions will be lifted.')) return;
+    setClearing(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      await fetch(`${API_URL}/api/courses/${courseId}/enrollment`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      refetch();
+    } catch { /* ignore */ } finally {
+      setClearing(false);
+    }
+  }
+
+  function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setCsvText(ev.target?.result as string ?? '');
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-12)' }}><div className="spinner spinner-lg" /></div>;
+  if (error) return <div className="alert alert-error">{error}</div>;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+      {/* Status banner */}
+      <div className={`alert ${total > 0 ? 'alert-info' : ''}`} style={{
+        background: total > 0 ? 'var(--color-primary-light)' : 'var(--color-surface)',
+        border: `1px solid ${total > 0 ? 'var(--color-primary)' : 'var(--color-border)'}`,
+        borderRadius: 'var(--radius-md)',
+        padding: 'var(--space-4)',
+        display: 'flex', alignItems: 'center', gap: 'var(--space-3)',
+      }}>
+        <UserCheck size={18} color={total > 0 ? 'var(--color-primary)' : 'var(--color-text-secondary)'} />
+        <div style={{ flex: 1 }}>
+          {total > 0 ? (
+            <>
+              <span style={{ fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-primary)' }}>
+                Enrollment active — {total} student{total !== 1 ? 's' : ''} enrolled.
+              </span>
+              <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)', marginLeft: 'var(--space-2)' }}>
+                Only these matric numbers can sign attendance.
+              </span>
+            </>
+          ) : (
+            <span style={{ color: 'var(--color-text-secondary)' }}>
+              No enrollment list — any registered student can sign attendance.
+            </span>
+          )}
+        </div>
+        {total > 0 && (
+          <button
+            className={`btn btn-ghost btn-sm${clearing ? ' btn-loading' : ''}`}
+            onClick={handleClear}
+            disabled={clearing}
+            style={{ color: 'var(--color-error)' }}
+          >
+            {clearing ? '' : <><Trash2 size={13} /> Clear All</>}
+          </button>
+        )}
+      </div>
+
+      {/* Import form */}
+      <div className="card">
+        <div className="card-header">
+          <span style={{ fontWeight: 'var(--font-weight-semibold)', fontSize: 'var(--font-size-sm)' }}>
+            Import Students
+          </span>
+        </div>
+        <div className="card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+            Paste CSV data or upload a file. Format: <code style={{ background: 'var(--color-surface)', padding: '1px 6px', borderRadius: 4 }}>MatricNumber,Name</code> (one per line, Name is optional). Existing entries are updated, not duplicated.
+          </p>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+            <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer' }}>
+              <Upload size={13} />
+              Upload CSV
+              <input type="file" accept=".csv,.txt" onChange={handleFileUpload} style={{ display: 'none' }} />
+            </label>
+            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>or paste below</span>
+          </div>
+          <textarea
+            className="input"
+            style={{ minHeight: 140, fontFamily: 'monospace', fontSize: 'var(--font-size-xs)', resize: 'vertical' }}
+            placeholder={'2021/1234,John Doe\n2021/5678,Jane Doe\n2021/9012'}
+            value={csvText}
+            onChange={(e) => { setCsvText(e.target.value); setImportError(''); setImportSuccess(''); }}
+          />
+          {importError && <div className="alert alert-error" style={{ fontSize: 'var(--font-size-sm)' }}>{importError}</div>}
+          {importSuccess && <div className="alert alert-success" style={{ fontSize: 'var(--font-size-sm)' }}>{importSuccess}</div>}
+          <button
+            className={`btn btn-primary btn-sm${importing ? ' btn-loading' : ''}`}
+            onClick={handleImport}
+            disabled={importing || !csvText.trim()}
+            style={{ alignSelf: 'flex-start' }}
+          >
+            {importing ? '' : 'Import'}
+          </button>
+        </div>
+      </div>
+
+      {/* Enrolled list */}
+      {enrollments.length > 0 && (
+        <div>
+          <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--space-4)' }}>
+            Enrolled Students ({total})
+          </h3>
+          <div className="table-wrapper">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Matric Number</th>
+                  <th>Name (from roster)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {enrollments.map((e: EnrollmentEntry) => (
+                  <tr key={e.id}>
+                    <td style={{ fontFamily: 'monospace', fontSize: 'var(--font-size-sm)' }}>{e.matricNumber}</td>
+                    <td style={{ color: 'var(--color-text-secondary)' }}>{e.studentName || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -305,6 +495,13 @@ export default function CourseDetailPage() {
           <BarChart2 size={14} style={{ display: 'inline', marginRight: '6px' }} />
           Analytics
         </button>
+        <button
+          className={`tab ${activeTab === 'enrollment' ? 'active' : ''}`}
+          onClick={() => setActiveTab('enrollment')}
+        >
+          <UserCheck size={14} style={{ display: 'inline', marginRight: '6px' }} />
+          Enrollment
+        </button>
       </div>
 
       {/* Sessions tab */}
@@ -348,6 +545,11 @@ export default function CourseDetailPage() {
       {/* Analytics tab */}
       {activeTab === 'analytics' && (
         <AnalyticsTab courseId={courseId} />
+      )}
+
+      {/* Enrollment tab */}
+      {activeTab === 'enrollment' && (
+        <EnrollmentTab courseId={courseId} />
       )}
     </>
   );

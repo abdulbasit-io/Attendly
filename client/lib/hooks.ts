@@ -105,6 +105,7 @@ export type Attendee = {
   department: string | null;
   signedAt: string;
   distanceM: number;
+  markedManually?: boolean;
 };
 
 export type AttendanceRecord = {
@@ -153,4 +154,25 @@ export function useAttendanceHistory(courseId?: string) {
     : '/api/attendance/history';
   const { data, loading, error, refetch } = useFetch<{ history: HistoryItem[] }>(endpoint);
   return { history: data?.history ?? [], loading, error, refetch };
+}
+
+// ── Enrollment ────────────────────────────────────────────────
+export type EnrollmentEntry = {
+  id: string;
+  matricNumber: string;
+  studentName: string | null;
+};
+
+export function useEnrollment(courseId: string | null) {
+  const { data, loading, error, refetch } = useFetch<{
+    enrollments: EnrollmentEntry[];
+    total: number;
+  }>(courseId ? `/api/courses/${courseId}/enrollment` : null);
+  return {
+    enrollments: data?.enrollments ?? [],
+    total: data?.total ?? 0,
+    loading,
+    error,
+    refetch,
+  };
 }
