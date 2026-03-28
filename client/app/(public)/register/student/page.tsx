@@ -35,7 +35,7 @@ export default function RegisterStudentPage() {
     const errs: Record<string, string> = {};
     if (!form.fullName.trim()) errs.fullName = 'Full name is required';
     if (!form.email.trim()) errs.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Enter a valid email';
+    else if (!form.email.endsWith('@student.funaab.edu.ng')) errs.email = 'Use your FUNAAB student email (@student.funaab.edu.ng)';
     if (!form.department.trim()) errs.department = 'Department is required';
     if (!form.matricNumber.trim()) errs.matricNumber = 'Matric number is required';
     if (!form.gender) errs.gender = 'Gender is required';
@@ -230,7 +230,7 @@ export default function RegisterStudentPage() {
                 id="email"
                 type="email"
                 className={`input${fieldErrors.email ? ' input-error' : ''}`}
-                placeholder="you@student.edu.ng"
+                placeholder="you@student.funaab.edu.ng"
                 value={form.email}
                 onChange={(e) => set('email', e.target.value)}
                 autoComplete="email"
