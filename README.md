@@ -24,6 +24,8 @@
 - **Level enforcement** — sessions can be restricted to a specific student level (100L–600L)
 - **Time-bound sessions** — auto-close after the lecturer's set duration; manual close also available
 - **Live attendee list** — real-time updates via SSE as students sign in during a session
+- **Manual attendance marking** — lecturers can mark any registered student present directly from the session page (for students without a phone or internet access)
+- **Enrollment lists** — lecturers can import a per-course roster (CSV); when active, only enrolled matric numbers can sign attendance
 - **Course analytics** — per-session records, cumulative stats, per-student attendance %, CSV export
 - **WhatsApp sharing** — one-tap share of the QR or attendance link directly to a class group
 - **Zero infrastructure** — no beacons, no hardware, no app to install; works in any mobile browser
@@ -64,9 +66,9 @@ Attendly/
 
   server/                  # Express.js backend
     src/
-      routes/              # auth, courses, sessions, attendance
+      routes/              # auth, courses, sessions, attendance, users
       controllers/         # Thin request/response handlers
-      services/            # Business logic
+      services/            # Business logic (attendance, enrollment, session, auth)
       middleware/          # auth.js, errorHandler.js
       utils/               # haversine.js, qrGenerator.js, tokens.js
     prisma/
@@ -157,6 +159,12 @@ Course
   createdAt, updatedAt
   UNIQUE (lecturerId, courseCode)
 
+CourseEnrollment
+  id, courseId, matricNumber, studentName?
+  createdAt
+  UNIQUE (courseId, matricNumber)
+  — when any rows exist for a course, only enrolled matric numbers can sign attendance
+
 Session
   id, courseId, lecturerId
   latitude, longitude, geofenceRadiusM (default 50m)
@@ -166,8 +174,9 @@ Session
 
 Attendance
   id, sessionId, studentId
-  deviceId?    — persistent browser UUID (one sign-in per device per session)
-  fingerprint? — browser fingerprint hash (blocks incognito/localStorage bypass)
+  deviceId?       — persistent browser UUID (one sign-in per device per session)
+  fingerprint?    — browser fingerprint hash (blocks incognito/localStorage bypass)
+  markedManually  — true when added by lecturer via manual mark (default false)
   latitude, longitude, distanceM
   signedAt
   UNIQUE (sessionId, studentId)
@@ -402,6 +411,53 @@ Toggle the archived status of a course.
 
 ---
 
+#### `GET /api/courses/:id/enrollment` 🔒
+Get the enrollment list for a course.
+
+**Response `200`**
+```json
+{
+  "enrollments": [
+    { "id": "...", "matricNumber": "2021/1234", "studentName": "John Doe" }
+  ],
+  "total": 42
+}
+```
+
+---
+
+#### `POST /api/courses/:id/enrollment` 🔒
+Import (upsert) a list of enrolled students. Existing entries are updated, not duplicated.
+
+**Body**
+```json
+{
+  "students": [
+    { "matricNumber": "2021/1234", "studentName": "John Doe" },
+    { "matricNumber": "2021/5678" }
+  ]
+}
+```
+
+**Response `200`**
+```json
+{ "imported": 2, "total": 42 }
+```
+
+> Once any enrollment entries exist for a course, only students whose matric number is in the list can sign attendance. Students without a matric number on their account are also blocked.
+
+---
+
+#### `DELETE /api/courses/:id/enrollment` 🔒
+Remove all enrolled students from the course, lifting the sign-in restriction.
+
+**Response `200`**
+```json
+{ "deleted": 42 }
+```
+
+---
+
 ### Sessions — `/api/sessions`
 
 #### `POST /api/sessions` 🔒 LECTURER
@@ -469,8 +525,9 @@ Server-Sent Events stream. Emits a new event each time a student signs in during
 
 **Event format**
 ```
-data: {"id":"...","fullName":"...","matricNumber":"...","department":"...","signedAt":"...","distanceM":"12.50"}
+data: {"id":"...","fullName":"...","matricNumber":"...","department":"...","signedAt":"...","distanceM":"12.50","markedManually":false}
 ```
+> `markedManually` is `true` when the entry was added by the lecturer via the manual mark feature.
 
 ---
 
@@ -521,8 +578,33 @@ Sign attendance for a session. Verifies GPS proximity, level restriction, and de
 | `400` | Session is closed or expired |
 | `400` | Student is outside the geofence radius |
 | `403` | Student's level does not match the session's level restriction |
+| `403` | Student's matric number is not on the course enrollment list |
 | `409` | Student has already signed for this session |
 | `409` | This device has already been used to sign attendance for this session |
+
+---
+
+#### `POST /api/attendance/sessions/:sessionId/manual` 🔒 LECTURER
+Manually mark a registered student as present for an active session. Used for students without a phone or internet access.
+
+**Body**
+```json
+{ "studentId": "uuid" }
+```
+
+**Response `201`**
+```json
+{ "attendance": { "id": "...", "markedManually": true, "signedAt": "..." }, "message": "Student marked present successfully" }
+```
+
+**Error responses**
+
+| Status | Reason |
+|---|---|
+| `400` | Session is closed or expired |
+| `404` | Session not found or does not belong to this lecturer |
+| `404` | Student not found |
+| `409` | Student has already been marked present for this session |
 
 ---
 
@@ -583,6 +665,27 @@ Name,Matric Number,Department,Gender,Sessions Attended,Total Sessions,Percentage
 
 ---
 
+### Users — `/api/users`
+
+#### `GET /api/users/search` 🔒 LECTURER
+Search registered students by name or matric number. Used by the manual mark feature.
+
+**Query params**
+- `q` — search query (minimum 2 characters)
+
+**Response `200`**
+```json
+{
+  "students": [
+    { "id": "...", "fullName": "Chukwuemeka Obi", "matricNumber": "2021/1234", "department": "Computer Science", "level": 300 }
+  ]
+}
+```
+
+> Returns up to 10 matches, ordered alphabetically. Returns an empty array if `q` is shorter than 2 characters.
+
+---
+
 ## Device Sign-in Protection
 
 Each attendance record captures two device signals to prevent a single device from being used by multiple students in the same session:
@@ -606,7 +709,8 @@ Both are optional fields on the API — if omitted, only the per-student uniquen
 | **Sprint 4** | Live SSE attendee list, active session page, session auto-close, student history | Done |
 | **Sprint 5** | Closed session record, CSV export, password change, level enforcement, role guards, error boundary | Done |
 | **Sprint 6** | Device sign-in protection, UI/UX polish, copy review, email domain enforcement, bug fixes | Done |
-| **Sprint 7** | E2E testing, performance testing, security audit | Pending |
+| **Sprint 7** | Manual attendance marking, enrollment lists, student search API | Done |
+| **Sprint 8** | E2E testing, performance testing, security audit | Pending |
 
 ---
 
