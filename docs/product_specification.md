@@ -1,7 +1,7 @@
 # Attendly — Product Specification
 
-**Version:** 1.0
-**Date:** March 23, 2026
+**Version:** 1.1
+**Date:** March 29, 2026
 **Prepared by:** Attendly Product Team
 
 ---
@@ -25,6 +25,7 @@ graph TD
         LD[Dashboard – My Courses]
         CC[Create Course]
         CD[Course Detail – Session History]
+        ENROLL[Enrollment List]
         CS[Create Session]
         AS[Active Session – Live View]
         SR[Session Record – Attendee List]
@@ -35,8 +36,7 @@ graph TD
 
     subgraph Student ["Student App"]
         SD[Dashboard – My Attendance]
-        SCAN[QR Scanner]
-        CONFIRM[Confirm Attendance]
+        ATTEND[Attend Page – Confirm & Submit]
         RESULT[Result Screen – Success / Error]
         HIST[Attendance History per Course]
         PROFILE_S[Profile Settings]
@@ -54,13 +54,13 @@ graph TD
     CD --> CS
     CD --> SR
     CD --> STATS
+    CD --> ENROLL
     CS --> AS
     AS --> SR
     STATS --> EXPORT
     LD --> PROFILE_L
-    SD --> SCAN
-    SCAN --> CONFIRM
-    CONFIRM --> RESULT
+    SD --> ATTEND
+    ATTEND --> RESULT
     SD --> HIST
     SD --> PROFILE_S
 ```
@@ -76,7 +76,7 @@ graph TD
 | Hero headline | "Attendance is as simple as a single scan" |
 | Sub-headline | "Location-verified, QR-powered attendance for universities. No hardware. No roll calls. Just scan." |
 | CTAs | "Get Started as Lecturer" / "Get Started as Student" |
-| Features section | 3–4 feature cards (Location Smart, One-Scan Simple, Real-Time Dashboard, Zero Infrastructure) |
+| Features section | Feature cards: Location Smart, One-Scan Simple, Real-Time Dashboard, Zero Infrastructure |
 | Footer | About, Privacy Policy, Contact |
 
 ### 3.2 Registration
@@ -84,166 +84,211 @@ graph TD
 **Lecturer form fields:**
 - Full name (text, required)
 - Email (email, required, unique across all users)
-- Password (password, required, min 8 chars, 1 uppercase, 1 number)
+- Password (password, required, min 8 characters)
 - Confirm password
 
 **Student form fields:**
 - Full name (text, required)
 - Department (text, required)
 - Matric number (text, required, unique among students)
-- Email (email, required, unique across all users)
+- Email (email, required, must end in `@student.funaab.edu.ng`, unique across all users)
+- Level (select: 100L / 200L / 300L / 400L / 500L / 600L, required)
 - Gender (select: Male / Female, required)
-- Password (password, required, same rules)
+- Password (password, required, min 8 characters)
 - Confirm password
 
 ### 3.3 Lecturer Dashboard
 
 | Component | Behavior |
 |---|---|
-| Course list | Cards showing course code, title, total sessions, last session date |
+| Course list | Cards showing course code, title, session count |
 | "Create Course" button | Opens modal: course code + title fields |
 | Each course card | Tappable → navigates to Course Detail |
 | Empty state | "You haven't created any courses yet. Create your first course to get started." |
 
 ### 3.4 Create Session Flow
 
+The session creation flow is a 4-step wizard:
+
 ```mermaid
 stateDiagram-v2
-    [*] --> SelectCourse: Tap "Start Session" on course
-    SelectCourse --> SetTimeLimit: Course pre-selected
-    SetTimeLimit --> CapturingLocation: Tap "Create Session"
-    CapturingLocation --> LocationCaptured: GPS acquired
+    [*] --> SetTimeLimit: Tap "Start Session" on course
+    SetTimeLimit --> CapturingLocation: Time limit confirmed
+    CapturingLocation --> SetGeofence: GPS acquired
     CapturingLocation --> LocationError: GPS failed / denied
-    LocationCaptured --> QRGenerated: QR code created
+    SetGeofence --> SetLevel: Geofence radius confirmed
+    SetLevel --> QRGenerated: QR code created
     QRGenerated --> ActiveSession: Session is live
     LocationError --> RetryPrompt: "Enable location and try again"
     RetryPrompt --> CapturingLocation: Retry
     ActiveSession --> SessionClosed: Timer expires OR manual close
 ```
 
+**Step 1 — Set Time Limit:**
+- Preset buttons: 15 min, 30 min, 45 min, 1 hr
+- Custom input field (1–180 minutes)
+
+**Step 2 — Capture Location:**
+- Auto-triggers `navigator.geolocation.getCurrentPosition()`
+- Shows spinner while acquiring GPS
+- Displays acquired coordinates on success
+
+**Step 3 — Set Geofence Radius:**
+- Slider: 20–200 m (stored range: 10–500 m)
+- Default: 50 m
+- Label updates as slider moves
+
+**Step 4 — Level Restriction (optional):**
+- Dropdown: Any Level / 100L / 200L / 300L / 400L / 500L / 600L
+- Default: Any Level (no restriction)
+
 **Active Session Screen:**
 - QR code display (large, centered)
-- "Share to WhatsApp" button → opens WhatsApp with QR image
+- Attendance link
+- "Share to WhatsApp" button → opens WhatsApp with QR image and link
 - "Download QR" button → saves PNG to device
 - Countdown timer (mm:ss)
-- Live attendee list below (auto-updates):
-  - Columns: Name, Matric Number, Time
-- "End Session" button (red, with confirmation dialog)
+- Live attendee list (auto-updates via SSE):
+  - Columns: Name | Matric No | Department | Distance | Signed At | Method
+  - Method column distinguishes "Scanned" from "Manual"
+- "Mark Student Present" — search by name or matric number, select and confirm
+- "End Session" button (with confirmation dialog)
 
-### 3.5 Student Scan Flow
+### 3.5 Student Attend Flow
+
+Students receive the attendance link via WhatsApp (or by scanning the QR with their phone camera / Google Lens). The link opens directly in the browser — no in-app QR scanner.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> OpenScanner: Tap "Scan Attendance"
-    OpenScanner --> Scanning: Camera active
-    Scanning --> QRDecoded: Valid QR detected
-    Scanning --> InvalidQR: Unrecognized QR
-    QRDecoded --> CheckingLocation: Capture student GPS
-    CheckingLocation --> WithinRange: distance ≤ geofence
-    CheckingLocation --> OutOfRange: distance > geofence
-    CheckingLocation --> LocationDenied: GPS not allowed
-    WithinRange --> ConfirmScreen: Show name + matric, "Confirm" button
-    ConfirmScreen --> Success: Tap confirm
-    OutOfRange --> ErrorScreen: "Too far from class"
-    LocationDenied --> ErrorScreen: "Location required"
-    InvalidQR --> ErrorScreen: "Invalid or expired QR"
+    [*] --> LoadSession: Student opens attendance URL
+    LoadSession --> SessionActive: Session is valid and open
+    LoadSession --> SessionClosed: Session expired or closed
+    SessionActive --> CapturingGPS: Page requests location permission
+    CapturingGPS --> WithinRange: distance ≤ geofenceRadiusM
+    CapturingGPS --> OutOfRange: distance > geofenceRadiusM
+    CapturingGPS --> LocationDenied: GPS permission denied
+    WithinRange --> ConfirmScreen: Show student details, "Confirm" button
+    ConfirmScreen --> Submitting: Tap "Confirm Attendance"
+    Submitting --> Success: All checks pass
+    Submitting --> Blocked: Level mismatch / not enrolled / device conflict
+    OutOfRange --> ErrorScreen
+    LocationDenied --> ErrorScreen
+    SessionClosed --> ErrorScreen
+    Blocked --> ErrorScreen
     Success --> [*]
 ```
 
 **Confirm Screen:**
 - Course: [Code] — [Title]
 - Session by: [Lecturer Name]
-- Your Name: [Auto-filled]
-- Matric No: [Auto-filled]
+- Your Name: [Auto-filled from profile]
+- Matric No: [Auto-filled from profile]
 - Single green button: **"Confirm Attendance"**
 
 **Success Screen:**
-- ✅ large checkmark animation
 - "Attendance Confirmed!"
-- Course, date, time displayed
+- Course name, date, and time displayed
 - "Back to Dashboard" button
 
-**Error Screen:**
-- ❌ icon
-- Clear error message (varies by reason)
-- "Try Again" or "Back to Dashboard"
+**Error Screen — messages by reason:**
 
-### 3.6 Attendance Records (Lecturer)
+| Reason | Message |
+|---|---|
+| Session closed / expired | "This session has ended. Contact your lecturer if you were present." |
+| Outside geofence | "You are [X] metres from the classroom. You must be within [Y] metres to sign in." |
+| Level mismatch | "This session is restricted to [X]L students." |
+| Not enrolled | "Your matric number is not on the enrollment list for this course." |
+| Already signed | "You have already signed attendance for this session." |
+| Device already used | "This device has already been used to sign attendance for this session." |
+| GPS denied | "Location access is required to verify your attendance. Please enable it and try again." |
+
+### 3.6 Enrollment Management (Lecturer)
+
+Accessible from the Course Detail page.
+
+| Component | Behavior |
+|---|---|
+| Enrollment list table | Matric number and student name (if provided) for each enrolled student |
+| Import button | Accepts JSON array of `{ matricNumber, studentName? }` entries; upserts — existing entries are not duplicated |
+| Clear list button | Removes all enrollment entries for the course; sign-in becomes open to any student |
+| Enrollment status indicator | Shows "Restricted" badge on course if an enrollment list is active |
+| Restriction note | "When a list is active, only students whose matric number is on it can sign in." |
+
+### 3.7 Attendance Records (Lecturer)
 
 **Session Record View:**
-- Session metadata: course, date, time, duration, total attendees
-- Sortable table: Name | Matric No | Department | Signed At
+- Session metadata: course, date, time, duration, level restriction, total attendees
+- Table: Name | Matric No | Department | Distance | Signed At | Method (Scanned / Manual)
 - Export button (CSV)
 
 **Course Analytics View:**
 - Total sessions held
-- Average attendance count + percentage
-- Per-student table: Name | Matric No | Sessions Attended | Attendance % | Status (Good / At Risk / Critical)
-  - Good: ≥ 75%, At Risk: 50–74%, Critical: < 50%
+- Per-student table: Name | Matric No | Department | Gender | Sessions Attended | Total Sessions | Attendance %
 
-### 3.7 Student Attendance History
+### 3.8 Student Attendance History
 
 - Course list with attendance % badge
-- Tap course → session list: Date | Status (Present ✅ / Absent ❌)
-- Overall percentage prominently displayed
+- Tap course → session list showing date and time for each session the student attended
+- Overall attendance percentage displayed per course
+
+> The history view shows sessions where the student was present. Sessions where a student was absent are not shown — lecturers see full session records including absent students via the course analytics view.
 
 ---
 
 ## 4. Feature Priority Matrix
 
-| Feature | MVP (V1) | V2 | V3 |
-|---|---|---|---|
-| Lecturer & student registration | ✅ | | |
-| Login (email + matric number) | ✅ | | |
-| Password reset | ✅ | | |
-| Course CRUD | ✅ | | |
-| Session creation with GPS capture | ✅ | | |
-| QR code generation + download | ✅ | | |
-| WhatsApp share (URL scheme) | ✅ | | |
-| Student QR scan + location verify | ✅ | | |
-| One-tap attendance confirmation | ✅ | | |
-| Live attendee list | ✅ | | |
-| Auto-close on timer expiry | ✅ | | |
-| Session attendance records | ✅ | | |
-| CSV export | ✅ | | |
-| Student attendance history | ✅ | | |
-| Cumulative course analytics | | ✅ | |
-| Configurable geofence radius | | ✅ | |
-| Course archiving | | ✅ | |
-| Late arrival tracking | | ✅ | |
-| Institution admin dashboard | | | ✅ |
-| SSO / university email verification | | | ✅ |
-| Course enrollment enforcement | | | ✅ |
-| Push notifications | | | ✅ |
-| Offline-first support | | | ✅ |
+| Feature | Status |
+|---|---|
+| Lecturer & student registration | Shipped |
+| Student email domain enforcement (`@student.funaab.edu.ng`) | Shipped |
+| Login (email or matric number) | Shipped |
+| Password reset via email | Shipped |
+| Course CRUD | Shipped |
+| Course archiving | Shipped |
+| Session creation with GPS capture | Shipped |
+| Configurable geofence radius | Shipped |
+| Level restriction per session | Shipped |
+| QR code generation + download | Shipped |
+| WhatsApp share | Shipped |
+| Student attend flow (camera / Google Lens → browser) | Shipped |
+| One-tap attendance confirmation | Shipped |
+| Device sign-in protection (UUID + fingerprint + IP) | Shipped |
+| Live attendee list (SSE) | Shipped |
+| Auto-close on timer expiry | Shipped |
+| Manual attendance marking | Shipped |
+| Enrollment list import + enforcement | Shipped |
+| Session attendance records | Shipped |
+| Course analytics (per-student %) | Shipped |
+| CSV export | Shipped |
+| Student attendance history | Shipped |
+| Password change | Shipped |
+| **E2E and performance testing** | Pending |
+| **Security audit** | Pending |
+| Institution admin dashboard | Backlog |
+| Push notifications | Backlog |
+| Offline-first support | Backlog |
 
 ---
 
 ## 5. QR Code Specification
 
-### Payload Structure
+### Payload
 
-```json
-{
-  "sid": "uuid-session-id",
-  "exp": 1711200000,
-  "loc": "encrypted-location-hash"
-}
+The QR code encodes a plain HTTPS URL pointing to the student attend page:
+
+```
+https://attendly.vercel.app/attend/<sessionId>
 ```
 
-- **sid**: UUID of the session (lookup key)
-- **exp**: Unix timestamp of session expiry (client-side pre-check)
-- **loc**: Encrypted/hashed location data (server validates; not readable client-side)
+The session ID is a UUID. All validation (expiry, geofence, level, enrollment, device) is performed server-side when the student submits attendance — nothing is encoded in the QR itself.
 
 ### QR Properties
 
 | Property | Value |
 |---|---|
 | Error correction level | M (15% recovery) |
-| Size | 300×300px (display), 600×600px (download) |
-| Format | PNG |
+| Format | PNG (server-side generation via `qrcode` npm package) |
 | Color | Dark foreground on white background |
-| Includes | Attendly logo watermark in center (optional) |
 
 ---
 
@@ -255,34 +300,31 @@ stateDiagram-v2
 | `enableHighAccuracy` | `true` |
 | `timeout` | 10,000ms |
 | `maximumAge` | 0 (no cache) |
-| Default geofence | 50 meters |
+| Default geofence | 50 metres |
+| Geofence range | 10–500 metres (configurable per session) |
+| Distance calculation | Haversine formula (server-side) |
 | Fallback | Prompt user to enable GPS; no fallback to IP geolocation |
-
-### Accuracy Handling
-
-- If `accuracy > 100m`, warn user: "GPS signal is weak. Move to an open area or enable Wi-Fi."
-- If `accuracy > 200m`, block sign-in: "Unable to verify your location accurately enough."
 
 ---
 
-## 7. Notification Strategy (MVP)
+## 7. Notification Strategy
 
-| Event | Channel | Recipient |
-|---|---|---|
-| Registration confirmation | Email | User |
-| Password reset link | Email | User |
-| Session created | In-app | Lecturer |
-| Attendance confirmed | In-app | Student |
-| Session closing in 2 min | In-app toast | Lecturer |
+| Event | Channel | Recipient | Status |
+|---|---|---|---|
+| Password reset link | Email | User | Shipped |
+| Session created | In-app | Lecturer | Shipped |
+| Attendance confirmed | In-app | Student | Shipped |
+| Registration confirmation | Email | User | Backlog |
+| Session closing soon | In-app toast | Lecturer | Backlog |
 
 ---
 
 ## 8. Accessibility & Internationalization
 
-| Concern | MVP Approach |
+| Concern | Approach |
 |---|---|
-| Language | English only (V1) |
+| Language | English only |
 | Screen reader | Semantic HTML, ARIA labels on all interactive elements |
 | Color contrast | WCAG AA compliance |
 | Touch targets | Minimum 44×44px for all tappable elements |
-| Keyboard navigation | Full support for web (tab, enter, escape) |
+| Keyboard navigation | Full support (tab, enter, escape) |

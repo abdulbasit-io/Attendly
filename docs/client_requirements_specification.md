@@ -1,7 +1,7 @@
 # Attendly — Client Requirements Specification
 
-**Version:** 1.0
-**Date:** March 23, 2026
+**Version:** 1.1
+**Date:** March 29, 2026
 **Prepared by:** Attendly Product Team
 **Client:** University administration, lecturers, and students
 
@@ -17,7 +17,7 @@ This document captures the **client's requirements** for Attendly — what the e
 
 | # | Objective |
 |---|---|
-| BO-1 | **Eliminate attendance fraud** — only physically present students can sign attendance |
+| BO-1 | **Eliminate attendance fraud** — only physically present, verified students can sign attendance |
 | BO-2 | **Reduce time spent on attendance** — from 5–15 minutes per lecture to under 30 seconds |
 | BO-3 | **Provide verifiable attendance records** — exportable, auditable data for departmental compliance |
 | BO-4 | **Require zero infrastructure investment** — no hardware, no installation, no IT support |
@@ -33,17 +33,19 @@ This document captures the **client's requirements** for Attendly — what the e
 |---|---|
 | Ease of use | Must be intuitive enough to use mid-lecture without training |
 | Speed | Session creation and QR sharing in under 30 seconds |
-| Trust | Confidence that only present students are recorded |
+| Trust | Confidence that only present, eligible students are recorded |
+| Control | Ability to restrict sessions by student level and enforce enrollment lists |
+| Override | Ability to manually mark students who cannot sign in digitally |
 | Records | Access to historical attendance data, exportable as CSV |
-| Course organization | Ability to manage multiple courses with per-course tracking |
+| Course organisation | Ability to manage multiple courses with per-course tracking |
 
 ### 3.2 Students
 
 | Need | Description |
 |---|---|
-| Simplicity | Mark attendance in ≤ 2 taps after scanning QR |
+| Simplicity | Mark attendance in ≤ 2 taps after opening the attendance link |
 | Transparency | View own attendance record and percentage at any time |
-| Fairness | System applied equally — no manual overrides |
+| Fairness | System applied consistently; edge cases handled via manual marking |
 | Privacy | Location used only for verification, not continuous tracking |
 
 ### 3.3 University Administration
@@ -64,41 +66,50 @@ This document captures the **client's requirements** for Attendly — what the e
 | Req ID | Requirement |
 |---|---|
 | CR-01 | Lecturers register with: full name, email, password |
-| CR-02 | Students register with: full name, department, matric number, email, gender, password |
-| CR-03 | Email must be unique across all users |
-| CR-04 | Matric number must be unique among students |
-| CR-05 | Password reset must be available via email |
+| CR-02 | Students register with: full name, department, matric number, email, level, gender, password |
+| CR-03 | Student email must end in `@student.funaab.edu.ng` |
+| CR-04 | Email must be unique across all users |
+| CR-05 | Matric number must be unique among students |
+| CR-06 | Password reset must be available via email link |
 
 ### 4.2 Course & Session Management
 
 | Req ID | Requirement |
 |---|---|
-| CR-06 | Lecturers must be able to create courses (code + title) |
-| CR-07 | Lecturers must be able to create attendance sessions tied to a course with a configurable time limit |
-| CR-08 | System must capture the lecturer's GPS location at session creation |
-| CR-09 | System must generate a unique QR code per session |
-| CR-10 | QR code must be downloadable as an image and shareable to WhatsApp |
-| CR-11 | Sessions must auto-close when the time limit is reached |
-| CR-12 | Lecturers must be able to manually close sessions early |
+| CR-07 | Lecturers must be able to create, edit, and archive courses (code + title) |
+| CR-08 | Lecturers must be able to import an enrollment list (matric numbers) per course; when active, only enrolled students may sign in |
+| CR-09 | Lecturers must be able to create attendance sessions tied to a course with a configurable time limit (1–180 minutes) |
+| CR-10 | System must capture the lecturer's GPS location at session creation |
+| CR-11 | Lecturers must be able to set the geofence radius per session (default: 50 m) |
+| CR-12 | Lecturers must be able to optionally restrict a session to a specific student level (100L–600L) |
+| CR-13 | System must generate a unique QR code per session |
+| CR-14 | QR code must be downloadable as PNG and shareable to WhatsApp |
+| CR-15 | Sessions must auto-close when the time limit is reached |
+| CR-16 | Lecturers must be able to manually close sessions early |
 
 ### 4.3 Attendance Sign-In
 
 | Req ID | Requirement |
 |---|---|
-| CR-13 | Students must sign in by scanning a QR code |
-| CR-14 | System must capture the student's GPS and verify proximity to the class |
-| CR-15 | Only students within a defined radius (default ~50m) may sign in |
-| CR-16 | Student details (name, matric number) must auto-fill — no manual data entry |
-| CR-17 | Students must receive immediate confirmation or a clear error message |
-| CR-18 | Duplicate sign-in for the same session must be prevented |
+| CR-17 | Students sign in by opening the attendance link in their mobile browser (via QR scan with phone camera or shared link) |
+| CR-18 | System must capture the student's GPS and verify proximity to the classroom |
+| CR-19 | Only students within the configured geofence radius may sign in |
+| CR-20 | If a session has a level restriction, only students at that level may sign in |
+| CR-21 | If a course has an active enrollment list, only listed students may sign in |
+| CR-22 | Student details (name, matric number) must auto-fill — no manual data entry required |
+| CR-23 | Each device may only be used to sign attendance once per session |
+| CR-24 | Students must receive immediate confirmation or a clear, reason-specific error message |
+| CR-25 | Duplicate sign-in for the same student in the same session must be prevented |
 
-### 4.4 Records & Reporting
+### 4.4 Records, Reporting & Overrides
 
 | Req ID | Requirement |
 |---|---|
-| CR-19 | Lecturers must view per-session attendance lists (name, matric no, department, time) |
-| CR-20 | Lecturers must export attendance records as CSV |
-| CR-21 | Students must view their own attendance history and percentage per course |
+| CR-26 | Lecturers must view per-session attendance lists (name, matric number, department, distance, sign-in time, method) |
+| CR-27 | Lecturers must view cumulative per-student attendance statistics per course |
+| CR-28 | Lecturers must export attendance records as CSV |
+| CR-29 | Lecturers must be able to manually mark any registered student as present during an active session |
+| CR-30 | Students must view their own attendance history and percentage per course |
 
 ---
 
@@ -107,8 +118,8 @@ This document captures the **client's requirements** for Attendly — what the e
 | Constraint | Detail |
 |---|---|
 | **Technology** | All core technologies must be open-source (no paid API dependencies for location, QR, or maps) |
-| **Infrastructure** | Zero hardware required in classrooms — the system relies only on users' smartphones |
-| **Platform** | Must work in a mobile browser (Chrome, Safari) — no app store installation required for MVP |
+| **Infrastructure** | Zero hardware required in classrooms — system relies only on users' smartphones |
+| **Platform** | Must work in a mobile browser (Chrome, Safari) — no app store installation required |
 | **Connectivity** | Must function on 3G/4G networks common on university campuses |
 | **WhatsApp sharing** | Must use the WhatsApp URL/share scheme (no Business API required) |
 | **Data residency** | No specific data residency requirements for MVP; server may be cloud-hosted anywhere |
@@ -119,25 +130,27 @@ This document captures the **client's requirements** for Attendly — what the e
 
 | Req ID | Requirement |
 |---|---|
-| DP-01 | Location data is used **only** for attendance verification at the moment of scan — not for tracking |
+| DP-01 | Location data is used **only** for attendance verification at the moment of sign-in — not for tracking |
 | DP-02 | Student location coordinates are stored only as part of the attendance record (for audit) |
-| DP-03 | Passwords must be hashed; never stored or transmitted in plain text |
-| DP-04 | All communication between client and server must be encrypted (HTTPS) |
-| DP-05 | Lecturers can export and delete their course data |
-| DP-06 | Students can view all data the system holds about them |
+| DP-03 | Device identifiers (UUID, fingerprint, IP) are stored per session only — used to prevent device sharing, not for profiling |
+| DP-04 | Passwords must be hashed; never stored or transmitted in plain text |
+| DP-05 | All communication between client and server must be encrypted (HTTPS) |
+| DP-06 | Lecturers can export and archive their course data |
+| DP-07 | Students can view all attendance data the system holds about them |
 
 ---
 
 ## 7. Delivery Milestones
 
-| Milestone | Definition | Acceptance Gate |
+| Milestone | Definition | Status |
 |---|---|---|
-| **M1 — Design Complete** | Wireframes, data model, API design approved | Client sign-off on product spec |
-| **M2 — Auth & Courses** | Registration, login, password reset, course CRUD functional | Demo with test accounts |
-| **M3 — Core Attendance** | Session creation, QR generation, scan + location verification, sign-in flow | End-to-end demo (lecturer creates → student signs) |
-| **M4 — Records & Export** | Attendance records, student history, CSV export | Export verified against test data |
-| **M5 — Beta** | Full system deployed, tested with real users at 1–2 departments | No critical bugs; ≥ 20 real sessions completed |
-| **M6 — Production Launch** | Public release with stable infrastructure | Uptime ≥ 99.5% over 7 days |
+| **M1 — Design Complete** | Wireframes, data model, API design approved | Done |
+| **M2 — Auth & Courses** | Registration, login, password reset, course CRUD functional | Done |
+| **M3 — Core Attendance** | Session creation, QR generation, scan + location verification, sign-in flow | Done |
+| **M4 — Records & Export** | Attendance records, student history, CSV export | Done |
+| **M5 — Advanced Features** | Level enforcement, enrollment lists, manual marking, device sign-in protection | Done |
+| **M6 — Beta** | Full system deployed, tested with real users at 1–2 departments | Pending |
+| **M7 — Production Launch** | Public release with stable infrastructure | Pending |
 
 ---
 
@@ -145,16 +158,20 @@ This document captures the **client's requirements** for Attendly — what the e
 
 The system will be considered **accepted** when:
 
-1. ✅ A lecturer can register, create a course, start a session, and share a QR code — all within 60 seconds
-2. ✅ A student can scan the QR code and confirm attendance in ≤ 2 taps (< 5 seconds total)
-3. ✅ A student scanning from > 100m away is **rejected** with a clear error
-4. ✅ A student scanning after the session expires is **rejected** with a clear error
-5. ✅ Duplicate sign-in attempts are blocked
-6. ✅ The lecturer can view the real-time attendee list during an active session
-7. ✅ The lecturer can export a session's attendance as CSV with correct data
-8. ✅ The student can view their own attendance history and percentage
-9. ✅ All location and authentication features use open-source technologies only
-10. ✅ The system functions correctly on mobile Chrome and Safari over a 3G connection
+1. A lecturer can register, create a course, start a session, and share a QR code — all within 60 seconds
+2. A student can open the attendance link and confirm attendance in ≤ 2 taps (< 5 seconds total)
+3. A student signing in from > configured radius is rejected with a clear error showing their distance
+4. A student signing in after the session expires is rejected with a clear error
+5. A student whose level does not match the session restriction is rejected
+6. A student not on the course enrollment list is rejected when a list is active
+7. A second student attempting to sign in from a device already used in the same session is rejected
+8. Duplicate sign-in attempts by the same student are blocked
+9. The lecturer can view the real-time attendee list during an active session
+10. The lecturer can manually mark a registered student as present
+11. The lecturer can export a course's attendance records as CSV with correct data
+12. The student can view their own attendance history and percentage
+13. All location and authentication features use open-source technologies only
+14. The system functions correctly on mobile Chrome and Safari over a 3G connection
 
 ---
 
