@@ -61,11 +61,33 @@ async function sign(studentId, data) {
     }
   }
 
-  const distance = haversineDistance(
-    parseFloat(session.latitude),
-    parseFloat(session.longitude),
-    latitude,
-    longitude
+  let distance;
+  try {
+    distance = haversineDistance(
+      parseFloat(session.latitude),
+      parseFloat(session.longitude),
+      latitude,
+      longitude
+    );
+  } catch (err) {
+    if (err.code === 'INVALID_COORDS') {
+      // Log coordinate error for debugging
+      console.error(
+        `[ATTENDANCE] Invalid GPS coordinates detected for session ${sessionId}:`,
+        err.message
+      );
+      const errMsg = new Error('GPS data error: Invalid location data. Please contact support.');
+      errMsg.status = 400;
+      throw errMsg;
+    }
+    throw err;
+  }
+
+  // Log distance for debugging purposes
+  console.log(
+    `[ATTENDANCE] Student ${studentId} signed in: distance=${Math.round(distance)}m, ` +
+    `geofence=${session.geofenceRadiusM}m, ` +
+    `coords=[${latitude},${longitude}]`
   );
 
   if (distance > session.geofenceRadiusM) {
