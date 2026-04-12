@@ -35,3 +35,6 @@ Thumbs.db
 
 # Next.js
 next-env.d.ts
+
+# Private strategy docs
+strategy.md

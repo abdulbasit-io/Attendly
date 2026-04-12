@@ -33,7 +33,7 @@ function RegisterLecturerForm() {
     const errs: Record<string, string> = {};
     if (!form.fullName.trim()) errs.fullName = 'Full name is required';
     if (!form.email.trim()) errs.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errs.email = 'Enter a valid email';
+    else if (!form.email.endsWith('@funaab.edu.ng')) errs.email = 'Use your university email (@funaab.edu.ng)';
     if (form.password.length < 8) errs.password = 'Password must be at least 8 characters';
     if (form.password !== form.confirmPassword) errs.confirmPassword = 'Passwords do not match';
     setFieldErrors(errs);
@@ -138,7 +138,7 @@ function RegisterLecturerForm() {
                 id="email"
                 type="email"
                 className={`input${fieldErrors.email ? ' input-error' : ''}`}
-                placeholder="you@unilag.edu.ng"
+                placeholder="you@funaab.edu.ng"
                 value={form.email}
                 onChange={(e) => set('email', e.target.value)}
                 autoComplete="email"

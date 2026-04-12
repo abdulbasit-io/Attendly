@@ -17,9 +17,11 @@ router.post('/register',
     body('role').isIn(['LECTURER', 'STUDENT']),
     body('fullName').trim().notEmpty().isLength({ min: 2, max: 100 }),
     body('email').isEmail().normalizeEmail()
-      .if(body('role').equals('STUDENT'))
-      .custom((email) => {
-        if (!email.endsWith('@student.funaab.edu.ng')) {
+      .custom((email, { req }) => {
+        if (req.body.role === 'LECTURER' && !email.endsWith('@funaab.edu.ng')) {
+          throw new Error('Lecturer email must end with @funaab.edu.ng');
+        }
+        if (req.body.role === 'STUDENT' && !email.endsWith('@student.funaab.edu.ng')) {
           throw new Error('Student email must end with @student.funaab.edu.ng');
         }
         return true;

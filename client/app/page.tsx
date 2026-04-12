@@ -60,7 +60,7 @@ export default function LandingPage() {
             <div className={styles.heroCardBody}>
               <div className={styles.qrMock}>
                 <div className={styles.qrGrid} />
-                <div className={styles.qrLabel}>CSC 401: Scan to attend</div>
+                <div className={styles.qrLabel}>MTE 504: Scan to attend</div>
               </div>
               <div className={styles.attendeeList}>
                 {['Amina B.', 'Chukwuemeka O.', 'Fatima A.', 'Ibrahim D.'].map((name, i) => (

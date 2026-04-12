@@ -74,11 +74,18 @@ function LoginForm() {
           <div className={styles.formHeader}>
             <h1 className={styles.formTitle}>Sign in</h1>
             <p className={styles.formSubtitle}>
-              No account?{' '}
-              <Link href={`/register/lecturer${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`}>Register as Lecturer</Link>
-              {' '}or{' '}
-              <Link href={`/register/student${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`}>as Student</Link>
+              Don't have an account?
             </p>
+            <div className={styles.registerOptions}>
+              <Link href={`/register/lecturer${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`} className={styles.registerOption}>
+                <span className={styles.registerOptionLabel}>Register as Lecturer</span>
+                <span className={styles.registerOptionDesc}>Create courses and manage sessions</span>
+              </Link>
+              <Link href={`/register/student${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`} className={styles.registerOption}>
+                <span className={styles.registerOptionLabel}>Register as Student</span>
+                <span className={styles.registerOptionDesc}>Sign attendance and track records</span>
+              </Link>
+            </div>
           </div>
 
           <form className={styles.form} onSubmit={handleSubmit} noValidate>

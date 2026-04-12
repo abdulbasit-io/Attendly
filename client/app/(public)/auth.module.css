@@ -135,6 +135,44 @@
 .formSubtitle {
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.registerOptions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.registerOption {
+  padding: var(--space-4);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  text-decoration: none;
+}
+
+.registerOption:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
+  transform: translateY(-2px);
+}
+
+.registerOptionLabel {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.registerOptionDesc {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
 }
 
 .formSubtitle a {
@@ -310,6 +348,10 @@
   }
 
   .formRow {
+    grid-template-columns: 1fr;
+  }
+
+  .registerOptions {
     grid-template-columns: 1fr;
   }
 }
