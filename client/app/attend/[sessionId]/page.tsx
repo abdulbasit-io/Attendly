@@ -218,6 +218,32 @@ export default function AttendPage() {
 
           <hr className="divider" />
 
+          {/* GPS data */}
+          {position && (
+            <div className={styles.gpsSection}>
+              <div className={styles.gpsSectionLabel}>
+                <MapPin size={14} />
+                Location Captured
+              </div>
+              <div className={styles.gpsDetails}>
+                <div className={styles.gpsRow}>
+                  <span className={styles.gpsLabel}>Latitude</span>
+                  <span className={styles.gpsValue}>{position.latitude.toFixed(6)}</span>
+                </div>
+                <div className={styles.gpsRow}>
+                  <span className={styles.gpsLabel}>Longitude</span>
+                  <span className={styles.gpsValue}>{position.longitude.toFixed(6)}</span>
+                </div>
+                <div className={styles.gpsRow}>
+                  <span className={styles.gpsLabel}>Accuracy</span>
+                  <span className={styles.gpsValue}>±{Math.round(position.accuracy)}m</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <hr className="divider" />
+
           {/* Student info — auto-filled */}
           <div className={styles.studentInfo}>
             <div className={styles.studentInfoLabel}>Signing in as</div>
@@ -229,14 +255,6 @@ export default function AttendPage() {
               <div className={styles.studentInfoMeta}>{user.department}</div>
             )}
           </div>
-
-          {/* GPS accuracy */}
-          {position && (
-            <div className={styles.gpsNote}>
-              <MapPin size={12} />
-              Location captured · ±{Math.round(position.accuracy)}m accuracy
-            </div>
-          )}
 
           <button
             className="btn btn-primary btn-lg w-full"
