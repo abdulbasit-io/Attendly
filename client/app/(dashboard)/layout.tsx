@@ -51,6 +51,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setUser(stored);
   }, [pathname, router]);
 
+  useEffect(() => {
+    if (!user || user.role !== 'LECTURER') return;
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const stream = new EventSource(`${apiUrl}/api/users/session-stream?token=${token}`);
+
+    stream.onmessage = (event) => {
+      try {
+        const session = JSON.parse(event.data) as { id: string };
+        if (!session?.id) return;
+        if (pathname !== `/lecturer/sessions/${session.id}`) {
+          router.push(`/lecturer/sessions/${session.id}`);
+        }
+      } catch {
+        // Ignore malformed events.
+      }
+    };
+
+    return () => {
+      stream.close();
+    };
+  }, [user, pathname, router]);
+
   function handleLogout() {
     clearStoredAuth();
     router.push('/login');

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -415,6 +415,27 @@ export default function CourseDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>('sessions');
   const [archiving, setArchiving] = useState(false);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [showPhoneTip, setShowPhoneTip] = useState(true);
+  const [showStartSessionModal, setShowStartSessionModal] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const dismissed = localStorage.getItem('attendly_phone_tip_dismissed') === '1';
+    if (dismissed) {
+      setShowPhoneTip(false);
+    }
+  }, []);
+
+  function dismissPhoneTip() {
+    setShowPhoneTip(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('attendly_phone_tip_dismissed', '1');
+    }
+  }
+
+  function handleOpenStartModal() {
+    setShowStartSessionModal(true);
+  }
 
   async function handleDeleteSession(sessionId: string) {
     if (!confirm('Delete this session and all its attendance records? This cannot be undone.')) return;
@@ -457,7 +478,6 @@ export default function CourseDetailPage() {
   }
 
   const activeSessions = sessions.filter((s) => s.status === 'ACTIVE');
-  const closedSessions = sessions.filter((s) => s.status === 'CLOSED');
 
   return (
     <>
@@ -496,12 +516,25 @@ export default function CourseDetailPage() {
             <Archive size={14} />
             {course.isArchived ? 'Unarchive' : 'Archive'}
           </button>
-          <Link href={`/lecturer/sessions/new?courseId=${courseId}`} className="btn btn-primary btn-sm">
+          <button className="btn btn-primary btn-sm" onClick={handleOpenStartModal}>
             <Plus size={14} />
             Start Session
-          </Link>
+          </button>
         </div>
       </div>
+
+      {showPhoneTip && (
+        <div className={styles.phoneTip}>
+          <div>
+            <div className={styles.phoneTipTitle}>Create sessions on your phone for best GPS accuracy.</div>
+            <p className={styles.phoneTipText}>
+              Phone location is usually more reliable. Keep this laptop tab open and your live session will open here automatically.
+              <span className={styles.alphaTag}>Alpha: location behavior is still being tuned.</span>
+            </p>
+          </div>
+          <button className="btn btn-ghost btn-sm" onClick={dismissPhoneTip}>Dismiss</button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="tabs" style={{ marginBottom: 'var(--space-6)' }}>
@@ -539,10 +572,10 @@ export default function CourseDetailPage() {
             <p style={{ fontSize: 'var(--font-size-sm)' }}>
               Start a session to begin taking attendance
             </p>
-            <Link href={`/lecturer/sessions/new?courseId=${courseId}`} className="btn btn-primary btn-sm">
+            <button className="btn btn-primary btn-sm" onClick={handleOpenStartModal}>
               <Plus size={14} />
               Start Session
-            </Link>
+            </button>
           </div>
         ) : (
           <div className="table-wrapper">
@@ -574,6 +607,57 @@ export default function CourseDetailPage() {
       {/* Enrollment tab */}
       {activeTab === 'enrollment' && (
         <EnrollmentTab courseId={courseId} />
+      )}
+
+      {showStartSessionModal && (
+        <div className="modal-overlay" onClick={() => setShowStartSessionModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)' }}>
+                Create Session on Phone?
+              </h2>
+              <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setShowStartSessionModal(false)} aria-label="Close">
+                ✕
+              </button>
+            </div>
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+              <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                For the most reliable location lock, start sessions from your phone.
+              </p>
+              <div className={styles.comparisonGrid}>
+                <div className={styles.comparisonCard}>
+                  <div className={styles.comparisonTitle}>If you start on laptop</div>
+                  <ul className={styles.comparisonList}>
+                    <li>Higher chance of weak GPS</li>
+                    <li>More location timeout retries</li>
+                    <li>Classroom pin may drift</li>
+                  </ul>
+                </div>
+                <div className={`${styles.comparisonCard} ${styles.comparisonCardGood}`}>
+                  <div className={styles.comparisonTitle}>If you start on phone</div>
+                  <ul className={styles.comparisonList}>
+                    <li>Faster and tighter location fix</li>
+                    <li>Lower sign-in disputes</li>
+                    <li>Live session auto-opens on this laptop</li>
+                  </ul>
+                </div>
+              </div>
+              <div className={styles.alphaInline}>Alpha notice: we are still fine-tuning geolocation behavior.</div>
+            </div>
+            <div className="modal-footer" style={{ justifyContent: 'space-between', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+              <button className="btn btn-ghost" onClick={() => setShowStartSessionModal(false)}>
+                I&apos;ll Use My Phone
+              </button>
+              <Link
+                href={`/lecturer/sessions/new?courseId=${courseId}`}
+                className="btn btn-primary"
+                onClick={() => setShowStartSessionModal(false)}
+              >
+                Continue on Laptop
+              </Link>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

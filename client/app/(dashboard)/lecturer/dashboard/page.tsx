@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, BookOpen, Archive, MoreVertical, ChevronRight } from 'lucide-react';
 import { useCourses, Course } from '@/lib/hooks';
@@ -258,40 +257,13 @@ function CourseCard({
 
 // ── Main Dashboard ────────────────────────────────────────────
 export default function LecturerDashboardPage() {
-  const router = useRouter();
   const { courses, loading, error, refetch } = useCourses();
   const [showCreate, setShowCreate] = useState(false);
   const [editCourse, setEditCourse] = useState<Course | null>(null);
   const [archiving, setArchiving] = useState<string | null>(null);
-  const [incomingSession, setIncomingSession] = useState<{ courseCode: string; courseTitle: string } | null>(null);
-  const streamRef = useRef<EventSource | null>(null);
 
   const activeCourses = courses.filter((c) => !c.isArchived);
   const archivedCourses = courses.filter((c) => c.isArchived);
-
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) return;
-
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    const stream = new EventSource(`${apiUrl}/api/users/session-stream?token=${token}`);
-    streamRef.current = stream;
-
-    stream.onmessage = (event) => {
-      try {
-        const session = JSON.parse(event.data) as { id: string; courseCode: string; courseTitle: string };
-        setIncomingSession({ courseCode: session.courseCode, courseTitle: session.courseTitle });
-        router.push(`/lecturer/sessions/${session.id}`);
-      } catch {
-        // Ignore malformed events.
-      }
-    };
-
-    return () => {
-      stream.close();
-      streamRef.current = null;
-    };
-  }, [router]);
 
   async function handleArchive(course: Course) {
     setArchiving(course.id);
@@ -307,38 +279,6 @@ export default function LecturerDashboardPage() {
 
   return (
     <>
-      <div className={styles.phoneFirstBanner}>
-        <div className={styles.phoneFirstBannerCopy}>
-          <div className={styles.phoneFirstKicker}>Phone-first session creation</div>
-          <h2 className={styles.phoneFirstTitle}>Create on your phone. Keep this tab open on your PC.</h2>
-          <p className={styles.phoneFirstText}>
-            Phone GPS is usually more accurate. When you create a session from your phone,
-            this dashboard will jump straight into the live session on your desktop.
-          </p>
-        </div>
-        <div className={styles.phoneFirstBullets}>
-          <span>Better location lock</span>
-          <span>Fewer timeout failures</span>
-          <span>PC auto-opens the live tab</span>
-        </div>
-      </div>
-
-      {incomingSession && (
-        <div className="card" style={{ marginBottom: 'var(--space-5)', borderColor: 'var(--color-primary)' }}>
-          <div className="card-body" style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-4)', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-primary)' }}>
-                Session opened from your phone
-              </div>
-              <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
-                {incomingSession.courseCode}: {incomingSession.courseTitle}
-              </div>
-            </div>
-            <div className="spinner" />
-          </div>
-        </div>
-      )}
-
       <div className="page-header">
         <div className="page-header-left">
           <h1 className="page-title">My Courses</h1>
