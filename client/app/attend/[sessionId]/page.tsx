@@ -97,7 +97,12 @@ export default function AttendPage() {
     if (flowState !== 'capturing-gps') return;
     (async () => {
       try {
-        const pos = await getCurrentPosition();
+        const pos = await getCurrentPosition({
+          maxAccuracyM: 100,
+          attempts: 3,
+          timeoutMs: 45000,
+          retryDelayMs: 750,
+        });
         setPosition(pos);
         setFlowState('confirm');
       } catch (err) {

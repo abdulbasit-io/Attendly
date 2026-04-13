@@ -40,7 +40,12 @@ function NewSessionContent() {
     setGeoState('capturing');
     setGeoError('');
     try {
-      const pos = await getCurrentPosition();
+      const pos = await getCurrentPosition({
+        maxAccuracyM: 30,
+        attempts: 5,
+        timeoutMs: 60000,
+        retryDelayMs: 1000,
+      });
       setPosition(pos);
       setGeoState('captured');
     } catch (err) {

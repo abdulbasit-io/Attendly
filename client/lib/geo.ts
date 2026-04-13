@@ -4,34 +4,40 @@ export type GeoPosition = {
   accuracy: number;
 };
 
+export type GeoCaptureOptions = {
+  maxAccuracyM?: number;
+  attempts?: number;
+  timeoutMs?: number;
+  retryDelayMs?: number;
+};
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
- * Get current position with retry logic and progressive accuracy relaxation.
- * First attempts high accuracy; if that times out, retries with lower accuracy.
+ * Get current position with retry logic and an accuracy threshold.
+ * Returns the best reading it can get within the configured attempts.
  */
-export function getCurrentPosition(): Promise<GeoPosition> {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error('Geolocation is not supported by your browser.'));
-      return;
-    }
+export async function getCurrentPosition(options: GeoCaptureOptions = {}): Promise<GeoPosition> {
+  const {
+    maxAccuracyM = Number.POSITIVE_INFINITY,
+    attempts = 3,
+    timeoutMs = 60000,
+    retryDelayMs = 750,
+  } = options;
 
-    let attempt = 0;
-    const maxAttempts = 2;
+  let best: GeoPosition | null = null;
 
-    function attemptGetPosition(enableHighAccuracy: boolean, timeout: number, attemptNum: number) {
+  async function captureOnce(): Promise<GeoPosition> {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation is not supported by your browser.'));
+        return;
+      }
+
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          // Accept any position; accuracy requirement is informational only
-          // Students may legitimately be far away (different building, outdoor area, etc.)
-          if (pos.coords.accuracy > 300000) {
-            // Only reject if accuracy is unreasonably bad (> 300km, likely invalid data)
-            reject(
-              new Error(
-                'GPS accuracy is severely degraded. Please ensure location services are enabled and try again.'
-              )
-            );
-            return;
-          }
           resolve({
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
@@ -39,18 +45,6 @@ export function getCurrentPosition(): Promise<GeoPosition> {
           });
         },
         (err) => {
-          // Handle errors with retry logic
-          if (err.code === err.TIMEOUT && attemptNum < maxAttempts) {
-            // Timeout: retry with lower accuracy requirement and longer timeout
-            console.log(`[GPS] Attempt ${attemptNum} timed out, retrying with lower accuracy...`);
-            setTimeout(
-              () => attemptGetPosition(false, 60000, attemptNum + 1),
-              500
-            );
-            return;
-          }
-
-          // Final error after all attempts
           switch (err.code) {
             case err.PERMISSION_DENIED:
               reject(new Error('Location access denied. Please enable location permissions in your browser settings.'));
@@ -59,17 +53,43 @@ export function getCurrentPosition(): Promise<GeoPosition> {
               reject(new Error('Location unavailable. Ensure location services are enabled on your device. If on a laptop, enable Wi-Fi-based location services.'));
               break;
             case err.TIMEOUT:
-              reject(new Error('Location request timed out after multiple attempts. Please ensure GPS/location services are working and try again.'));
+              reject(new Error('Location request timed out. Try again with better GPS signal or move closer to a window/outdoors.'));
               break;
             default:
               reject(new Error('Unable to get your location. Please check your device settings and try again.'));
           }
         },
-        { enableHighAccuracy, timeout, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 0 }
       );
+    });
+  }
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      const position = await captureOnce();
+
+      if (!best || position.accuracy < best.accuracy) {
+        best = position;
+      }
+
+      if (position.accuracy <= maxAccuracyM) {
+        return position;
+      }
+    } catch (err) {
+      if (attempt === attempts) {
+        throw err;
+      }
     }
 
-    // First attempt: high accuracy with 45 second timeout
-    attemptGetPosition(true, 45000, 1);
-  });
+    if (attempt < attempts) {
+      await delay(retryDelayMs);
+    }
+  }
+
+  const bestAccuracy = best ? Math.round(best.accuracy) : null;
+  throw new Error(
+    bestAccuracy === null
+      ? 'Unable to get a usable location fix. Please try again in a clearer GPS environment.'
+      : `We could not get a precise enough location fix. Best reading was ±${bestAccuracy}m. Move outdoors, enable precise location, or try again near a window.`
+  );
 }
