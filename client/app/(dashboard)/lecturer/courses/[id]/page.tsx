@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ArrowLeft,
   Plus,
   Archive,
   BarChart2,
@@ -17,10 +16,9 @@ import {
   UserCheck,
   Upload,
   Trash2,
-  AlertCircle,
 } from 'lucide-react';
 import { useCourse, useCourseAttendance, useEnrollment, Session, AttendanceRecord, EnrollmentEntry } from '@/lib/hooks';
-import { api, ApiError } from '@/lib/api';
+import { api } from '@/lib/api';
 import styles from './course.module.css';
 
 // ── Tab type ──────────────────────────────────────────────────
@@ -414,7 +412,6 @@ export default function CourseDetailPage() {
   const { course, sessions, loading, error, refetch } = useCourse(courseId);
   const [activeTab, setActiveTab] = useState<Tab>('sessions');
   const [archiving, setArchiving] = useState(false);
-  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [showPhoneTip, setShowPhoneTip] = useState(true);
   const [showStartSessionModal, setShowStartSessionModal] = useState(false);
 
@@ -526,10 +523,9 @@ export default function CourseDetailPage() {
       {showPhoneTip && (
         <div className={styles.phoneTip}>
           <div>
-            <div className={styles.phoneTipTitle}>Create sessions on your phone for best GPS accuracy.</div>
+            <div className={styles.phoneTipTitle}>Start sessions on your phone for better GPS accuracy.</div>
             <p className={styles.phoneTipText}>
-              Phone location is usually more reliable. Keep this laptop tab open and your live session will open here automatically.
-              <span className={styles.alphaTag}>Alpha: location behavior is still being tuned.</span>
+              Phone location is usually steadier. Keep this tab open and the live session will open here automatically.
             </p>
           </div>
           <button className="btn btn-ghost btn-sm" onClick={dismissPhoneTip}>Dismiss</button>
@@ -614,7 +610,7 @@ export default function CourseDetailPage() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)' }}>
-                Create Session on Phone?
+                Start on your phone
               </h2>
               <button className="btn btn-ghost btn-icon btn-sm" onClick={() => setShowStartSessionModal(false)} aria-label="Close">
                 ✕
@@ -622,27 +618,13 @@ export default function CourseDetailPage() {
             </div>
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
               <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-                For the most reliable location lock, start sessions from your phone.
+                Phone GPS is usually steadier. The session will still open on this laptop automatically.
               </p>
-              <div className={styles.comparisonGrid}>
-                <div className={styles.comparisonCard}>
-                  <div className={styles.comparisonTitle}>If you start on laptop</div>
-                  <ul className={styles.comparisonList}>
-                    <li>Higher chance of weak GPS</li>
-                    <li>More location timeout retries</li>
-                    <li>Classroom pin may drift</li>
-                  </ul>
-                </div>
-                <div className={`${styles.comparisonCard} ${styles.comparisonCardGood}`}>
-                  <div className={styles.comparisonTitle}>If you start on phone</div>
-                  <ul className={styles.comparisonList}>
-                    <li>Faster and tighter location fix</li>
-                    <li>Lower sign-in disputes</li>
-                    <li>Live session auto-opens on this laptop</li>
-                  </ul>
-                </div>
+              <div className={styles.quickReasons}>
+                <div className={styles.quickReason}>Laptop GPS can drift.</div>
+                <div className={styles.quickReason}>Phone GPS is usually steadier.</div>
+                <div className={`${styles.quickReason} ${styles.quickReasonGood}`}>Use your phone, and this tab opens the live session.</div>
               </div>
-              <div className={styles.alphaInline}>Alpha notice: we are still fine-tuning geolocation behavior.</div>
             </div>
             <div className="modal-footer" style={{ justifyContent: 'space-between', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
               <button className="btn btn-ghost" onClick={() => setShowStartSessionModal(false)}>

@@ -166,6 +166,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         <div className={styles.sidebarFooter}>
+          <div className={styles.alphaNotice}>
+            <span className={styles.alphaNoticeBadge}>Alpha</span>
+            <div className={styles.alphaNoticeText}>
+              Attendly is still in active tuning. Some location and session behaviors may change as we refine the product.
+            </div>
+          </div>
           <button className={styles.logoutBtn} onClick={handleLogout}>
             <LogOut size={16} />
             Sign out

@@ -207,6 +207,10 @@ export default function LandingPage() {
         <div className={styles.footerInner}>
           <span className={styles.footerLogo}>Attendly</span>
           <span className={styles.footerTagline}>Attendance as simple as a single scan.</span>
+          <span className={styles.footerAlpha}>
+            <span className={styles.footerAlphaBadge}>Alpha</span>
+            Active release. A few flows may still be refined.
+          </span>
         </div>
       </footer>
     </div>
