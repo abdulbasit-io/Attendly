@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const prisma = require('../config/db');
 const { auth, requireRole } = require('../middleware/auth');
+const { eventEmitter } = require('../services/events');
 
 // Lecturer: search registered students by name or matric number
 router.get('/search', auth, requireRole('LECTURER'), async (req, res, next) => {
@@ -28,6 +29,28 @@ router.get('/search', auth, requireRole('LECTURER'), async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+router.get('/session-stream', auth, requireRole('LECTURER'), (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 30000);
+
+  const listener = (session) => {
+    res.write(`data: ${JSON.stringify(session)}\n\n`);
+  };
+
+  eventEmitter.on(`sessionCreated:${req.user.id}`, listener);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    eventEmitter.off(`sessionCreated:${req.user.id}`, listener);
+  });
 });
 
 module.exports = router;

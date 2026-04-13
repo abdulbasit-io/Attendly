@@ -1,5 +1,6 @@
 const prisma = require('../config/db');
 const { generateSessionQR } = require('../utils/qrGenerator');
+const { eventEmitter } = require('./events');
 
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
@@ -38,6 +39,15 @@ async function create(lecturerId, data) {
   });
 
   const { attendUrl, imageBase64 } = await generateSessionQR(session.id, CLIENT_URL);
+
+  eventEmitter.emit(`sessionCreated:${lecturerId}`, {
+    id: session.id,
+    courseId,
+    courseCode: course.courseCode,
+    courseTitle: course.courseTitle,
+    createdAt: session.createdAt,
+    expiresAt,
+  });
 
   // Schedule auto-close
   setTimeout(async () => {
