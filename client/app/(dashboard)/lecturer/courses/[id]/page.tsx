@@ -414,6 +414,18 @@ export default function CourseDetailPage() {
   const [archiving, setArchiving] = useState(false);
   const [showPhoneTip, setShowPhoneTip] = useState(true);
   const [showStartSessionModal, setShowStartSessionModal] = useState(false);
+  const [isPhoneDevice, setIsPhoneDevice] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const media = window.matchMedia('(max-width: 768px) and (pointer: coarse)');
+    const updateDeviceType = () => setIsPhoneDevice(media.matches);
+
+    updateDeviceType();
+    media.addEventListener('change', updateDeviceType);
+    return () => media.removeEventListener('change', updateDeviceType);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -431,6 +443,10 @@ export default function CourseDetailPage() {
   }
 
   function handleOpenStartModal() {
+    if (isPhoneDevice) {
+      router.push(`/lecturer/sessions/new?courseId=${courseId}`);
+      return;
+    }
     setShowStartSessionModal(true);
   }
 
@@ -520,7 +536,7 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {showPhoneTip && (
+      {!isPhoneDevice && showPhoneTip && (
         <div className={styles.phoneTip}>
           <div>
             <div className={styles.phoneTipTitle}>Start sessions on your phone for better GPS accuracy.</div>
@@ -605,7 +621,7 @@ export default function CourseDetailPage() {
         <EnrollmentTab courseId={courseId} />
       )}
 
-      {showStartSessionModal && (
+      {!isPhoneDevice && showStartSessionModal && (
         <div className="modal-overlay" onClick={() => setShowStartSessionModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
