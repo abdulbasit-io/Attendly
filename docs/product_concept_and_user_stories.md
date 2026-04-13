@@ -43,7 +43,7 @@ sequenceDiagram
 ### Anti-Fraud Measures
 
 1. **Dynamic QR codes** — Each QR code is unique per session and time-windowed. Forwarding a screenshot doesn't help if the recipient isn't physically present — the GPS check blocks them.
-2. **Geofence radius** — Configurable by the lecturer (default: 50 metres, range: 10–500 m). Tight enough to mean "in this building," loose enough to handle GPS drift.
+2. **Geofence radius** — Configurable by the lecturer (default: 250 metres, range: 50–500 m). Tight enough to mean "near this classroom," loose enough to handle GPS drift.
 3. **Three-signal device binding** — Each session records the signing device's UUID (from `localStorage`), a browser fingerprint (FNV-1a hash of user agent, screen, timezone, hardware concurrency, and platform), and the client IP address. All three are enforced as unique constraints per session, so a single device cannot be used by multiple students even across incognito mode or cleared storage.
 4. **Session expiry** — After the time limit, the QR becomes invalid and sign-ins are rejected.
 5. **Enrollment enforcement** — If a lecturer uploads an enrollment list for a course, only students whose matric number is on the list can sign attendance.

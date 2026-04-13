@@ -134,8 +134,8 @@ stateDiagram-v2
 - Displays acquired coordinates on success
 
 **Step 3 — Set Geofence Radius:**
-- Slider: 20–200 m (stored range: 10–500 m)
-- Default: 50 m
+- Slider: 50–500 m
+- Default: 250 m
 - Label updates as slider moves
 
 **Step 4 — Level Restriction (optional):**
@@ -300,7 +300,7 @@ The session ID is a UUID. All validation (expiry, geofence, level, enrollment, d
 | `enableHighAccuracy` | `true` |
 | `timeout` | 10,000ms |
 | `maximumAge` | 0 (no cache) |
-| Default geofence | 50 metres |
+| Default geofence | 250 metres |
 | Geofence range | 10–500 metres (configurable per session) |
 | Distance calculation | Haversine formula (server-side) |
 | Fallback | Prompt user to enable GPS; no fallback to IP geolocation |

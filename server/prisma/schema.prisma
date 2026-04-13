@@ -75,7 +75,7 @@ model Session {
   lecturerId       String
   latitude         Decimal       @db.Decimal(10, 7)
   longitude        Decimal       @db.Decimal(10, 7)
-  geofenceRadiusM  Int           @default(50)
+  geofenceRadiusM  Int           @default(250)
   timeLimitMinutes Int
   level            Int?
   qrPayload        String        @unique

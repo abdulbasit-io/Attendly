@@ -26,7 +26,7 @@ function NewSessionContent() {
 
   const [timeLimit, setTimeLimit] = useState(30);
   const [customTime, setCustomTime] = useState('');
-  const [geofenceRadius, setGeofenceRadius] = useState(50);
+  const [geofenceRadius, setGeofenceRadius] = useState(250);
   const [sessionLevel, setSessionLevel] = useState('');
   const [geoState, setGeoState] = useState<'idle' | 'capturing' | 'captured' | 'error'>('idle');
   const [position, setPosition] = useState<GeoPosition | null>(null);
@@ -231,8 +231,8 @@ function NewSessionContent() {
             <div className={styles.geofenceSlider}>
               <input
                 type="range"
-                min={20}
-                max={200}
+                min={50}
+                max={500}
                 step={10}
                 value={geofenceRadius}
                 onChange={(e) => setGeofenceRadius(Number(e.target.value))}
@@ -241,7 +241,7 @@ function NewSessionContent() {
               <div className={styles.geofenceValue}>
                 <span className={styles.geofenceNum}>{geofenceRadius}m</span>
                 <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-                  {geofenceRadius <= 30 ? 'Tight (single room)' : geofenceRadius <= 70 ? 'Standard (classroom)' : geofenceRadius <= 120 ? 'Wide (lecture hall)' : 'Very wide (building)'}
+                  {geofenceRadius <= 100 ? 'Tight (single room)' : geofenceRadius <= 250 ? 'Standard (classroom)' : geofenceRadius <= 400 ? 'Wide (building)' : 'Very wide (campus area)'}
                 </span>
               </div>
             </div>

@@ -139,7 +139,7 @@ erDiagram
         uuid lecturer_id FK
         decimal latitude
         decimal longitude
-        int geofence_radius_m "default 50"
+        int geofence_radius_m "default 250"
         int time_limit_minutes
         text qr_payload
         enum status "active | closed"
@@ -205,7 +205,7 @@ model Session {
   lecturerId       String
   latitude         Decimal  @db.Decimal(10, 7)
   longitude        Decimal  @db.Decimal(10, 7)
-  geofenceRadiusM  Int      @default(50)
+  geofenceRadiusM  Int      @default(250)
   timeLimitMinutes Int
   qrPayload        String   @unique
   status           SessionStatus @default(ACTIVE)

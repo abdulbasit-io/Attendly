@@ -114,7 +114,7 @@ Attendly is a standalone system. It uses open-source technologies for location s
 |---|---|---|
 | FR-20 | Lecturers shall create an attendance session by selecting a course and setting a time limit (1–180 minutes) | Must |
 | FR-21 | System shall capture the lecturer's GPS coordinates at session creation | Must |
-| FR-22 | Lecturers shall set a geofence radius per session (default: 50 m, range: 10–500 m) | Must |
+| FR-22 | Lecturers shall set a geofence radius per session (default: 250 m, range: 50–500 m) | Must |
 | FR-23 | Lecturers shall optionally restrict a session to a specific student level (100L–600L) | Must |
 | FR-24 | System shall generate a unique, session-bound QR code encoding the attendance URL | Must |
 | FR-25 | QR code shall be downloadable as PNG | Must |
@@ -286,7 +286,7 @@ graph TB
 | lecturerId | UUID | Foreign key → User |
 | latitude | DECIMAL(10,7) | Required — lecturer's location |
 | longitude | DECIMAL(10,7) | Required — lecturer's location |
-| geofenceRadiusM | INTEGER | Default: 50, range: 10–500 |
+| geofenceRadiusM | INTEGER | Default: 250, range: 50–500 |
 | timeLimitMinutes | INTEGER | Required, range: 1–180 |
 | level | INTEGER | Optional — restricts sign-in by student level |
 | qrPayload | VARCHAR | Unique — encodes the attendance URL |

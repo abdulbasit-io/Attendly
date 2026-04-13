@@ -80,7 +80,7 @@ This document captures the **client's requirements** for Attendly — what the e
 | CR-08 | Lecturers must be able to import an enrollment list (matric numbers) per course; when active, only enrolled students may sign in |
 | CR-09 | Lecturers must be able to create attendance sessions tied to a course with a configurable time limit (1–180 minutes) |
 | CR-10 | System must capture the lecturer's GPS location at session creation |
-| CR-11 | Lecturers must be able to set the geofence radius per session (default: 50 m) |
+| CR-11 | Lecturers must be able to set the geofence radius per session (default: 250 m) |
 | CR-12 | Lecturers must be able to optionally restrict a session to a specific student level (100L–600L) |
 | CR-13 | System must generate a unique QR code per session |
 | CR-14 | QR code must be downloadable as PNG and shareable to WhatsApp |
