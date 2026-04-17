@@ -70,19 +70,20 @@ model CourseEnrollment {
 }
 
 model Session {
-  id               String        @id @default(uuid())
-  courseId         String
-  lecturerId       String
-  latitude         Decimal       @db.Decimal(10, 7)
-  longitude        Decimal       @db.Decimal(10, 7)
-  geofenceRadiusM  Int           @default(250)
-  timeLimitMinutes Int
-  level            Int?
-  qrPayload        String        @unique
-  status           SessionStatus @default(ACTIVE)
-  createdAt        DateTime      @default(now())
-  expiresAt        DateTime
-  closedAt         DateTime?
+  id                     String        @id @default(uuid())
+  courseId               String
+  lecturerId             String
+  latitude               Decimal       @db.Decimal(10, 7)
+  longitude              Decimal       @db.Decimal(10, 7)
+  geofenceRadiusM        Int           @default(250)
+  lecturerGpsAccuracyM   Int           @default(0)
+  timeLimitMinutes       Int
+  level                  Int?
+  qrPayload              String        @unique
+  status                 SessionStatus @default(ACTIVE)
+  createdAt              DateTime      @default(now())
+  expiresAt              DateTime
+  closedAt               DateTime?
 
   course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lecturer    User         @relation(fields: [lecturerId], references: [id], onDelete: Cascade)

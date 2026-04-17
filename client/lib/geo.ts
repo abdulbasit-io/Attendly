@@ -2,6 +2,7 @@ export type GeoPosition = {
   latitude: number;
   longitude: number;
   accuracy: number;
+  accuracyLevel?: 'high' | 'medium' | 'low'; // high: ±30m (GPS), medium: ±100m (A-GPS/WiFi), low: ±300m+ (cell tower)
 };
 
 export type GeoCaptureOptions = {
@@ -18,13 +19,14 @@ function delay(ms: number): Promise<void> {
 /**
  * Get current position with retry logic and an accuracy threshold.
  * Returns the best reading it can get within the configured attempts.
+ * Rejects cell tower estimates (accuracy > 150m) in favor of true GPS.
  */
 export async function getCurrentPosition(options: GeoCaptureOptions = {}): Promise<GeoPosition> {
   const {
-    maxAccuracyM = Number.POSITIVE_INFINITY,
-    attempts = 3,
+    maxAccuracyM = 150, // ← Changed from infinity; reject cell tower estimates
+    attempts = 5,        // ← Increased from 3
     timeoutMs = 60000,
-    retryDelayMs = 750,
+    retryDelayMs = 1000, // ← Increased from 750
   } = options;
 
   let best: GeoPosition | null = null;
@@ -38,10 +40,18 @@ export async function getCurrentPosition(options: GeoCaptureOptions = {}): Promi
 
       navigator.geolocation.getCurrentPosition(
         (pos) => {
+          const accuracy = pos.coords.accuracy;
+          let accuracyLevel: 'high' | 'medium' | 'low';
+
+          if (accuracy <= 30) accuracyLevel = 'high'; // Real GPS
+          else if (accuracy <= 100) accuracyLevel = 'medium'; // A-GPS or WiFi
+          else accuracyLevel = 'low'; // Cell tower triangulation
+
           resolve({
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
+            accuracy,
+            accuracyLevel,
           });
         },
         (err) => {
@@ -72,13 +82,24 @@ export async function getCurrentPosition(options: GeoCaptureOptions = {}): Promi
         best = position;
       }
 
+      // Log warning if accuracy is degraded (cell tower triangulation)
+      if (position.accuracy > 150) {
+        console.warn(
+          `[GPS] Degraded accuracy (±${Math.round(position.accuracy)}m). ` +
+          `This is cell tower triangulation. ` +
+          `Attempt ${attempt}/${attempts}. Retrying...`
+        );
+      }
+
       if (position.accuracy <= maxAccuracyM) {
+        console.log(`[GPS] Good position acquired: ±${Math.round(position.accuracy)}m accuracy`);
         return position;
       }
     } catch (err) {
       if (attempt === attempts) {
         throw err;
       }
+      // Silently continue to next attempt
     }
 
     if (attempt < attempts) {
@@ -90,6 +111,7 @@ export async function getCurrentPosition(options: GeoCaptureOptions = {}): Promi
   throw new Error(
     bestAccuracy === null
       ? 'Unable to get a usable location fix. Please try again in a clearer GPS environment.'
-      : `We could not get a precise enough location fix. Best reading was ±${bestAccuracy}m. Move outdoors, enable precise location, or try again near a window.`
+      : `Location accuracy is ±${bestAccuracy}m (cell tower estimate). For best results: Move outdoors, enable precise location, or try near a window. ` +
+        `If indoors, the session will still accept you but with a wider tolerance.`
   );
 }

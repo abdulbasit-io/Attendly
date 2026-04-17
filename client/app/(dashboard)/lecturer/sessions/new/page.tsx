@@ -65,6 +65,7 @@ function NewSessionContent() {
         latitude: position.latitude,
         longitude: position.longitude,
         geofenceRadiusM: geofenceRadius,
+        gpsAccuracyM: Math.round(position.accuracy),
         ...(sessionLevel ? { level: parseInt(sessionLevel, 10) } : {}),
       });
       router.push(`/lecturer/sessions/${data.session.id}`);

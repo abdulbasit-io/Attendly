@@ -121,6 +121,7 @@ export default function AttendPage() {
         sessionId,
         latitude: position.latitude,
         longitude: position.longitude,
+        gpsAccuracyM: Math.round(position.accuracy),
         deviceId: getDeviceId(),
         fingerprint: getDeviceFingerprint(),
       });

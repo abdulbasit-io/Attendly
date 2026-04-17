@@ -83,15 +83,36 @@ async function sign(studentId, data) {
     throw err;
   }
 
+  // ACCURACY-AWARE GEOFENCING
+  // If GPS accuracy is poor (cell tower triangulation), expand geofence tolerance
+  const studentGpsAccuracyM = gpsAccuracyM || 0;
+  const lecturerGpsAccuracyM = session.lecturerGpsAccuracyM || 0;
+  const combinedUncertaintyM = studentGpsAccuracyM + lecturerGpsAccuracyM;
+
+  // Adaptive geofence: use base geofence, but expand if both sides have poor GPS
+  const adjustedGeofenceM = Math.max(
+    session.geofenceRadiusM,
+    combinedUncertaintyM + 50  // 50m buffer for additional safety margin
+  );
+
+  const gpsAccuracyWarning = combinedUncertaintyM > 200
+    ? ` (GPS accuracy is ±${lecturerGpsAccuracyM}m lecturer, ±${studentGpsAccuracyM}m student)`
+    : '';
+
   // Log distance for debugging purposes
   console.log(
     `[ATTENDANCE] Student ${studentId} signed in: distance=${Math.round(distance)}m, ` +
-    `geofence=${session.geofenceRadiusM}m, ` +
-    `coords=[${latitude},${longitude}]`
+    `geofence=${session.geofenceRadiusM}m${combinedUncertaintyM > 0 ? `, adjusted=${Math.round(adjustedGeofenceM)}m` : ''}, ` +
+    `coords=[${latitude},${longitude}]${gpsAccuracyWarning}`
   );
 
-  if (distance > session.geofenceRadiusM) {
-    const err = new Error(`You are too far from the class (${Math.round(distance)}m away, limit is ${session.geofenceRadiusM}m)`);
+  if (distance > adjustedGeofenceM) {
+    const recommendedAction = combinedUncertaintyM > 200
+      ? ' Try refreshing your location or moving closer to a window/outdoors for better GPS signal.'
+      : '';
+    const err = new Error(
+      `You are too far from the class (${Math.round(distance)}m away, limit is ${Math.round(adjustedGeofenceM)}m).${recommendedAction}`
+    );
     err.status = 400;
     throw err;
   }

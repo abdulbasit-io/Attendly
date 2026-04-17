@@ -5,7 +5,7 @@ const { eventEmitter } = require('./events');
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
 async function create(lecturerId, data) {
-  const { courseId, timeLimitMinutes, latitude, longitude, geofenceRadiusM = 250, level } = data;
+  const { courseId, timeLimitMinutes, latitude, longitude, geofenceRadiusM = 250, gpsAccuracyM = 0, level } = data;
 
   // Verify course belongs to this lecturer
   const course = await prisma.course.findFirst({ where: { id: courseId, lecturerId } });
@@ -24,6 +24,7 @@ async function create(lecturerId, data) {
       latitude,
       longitude,
       geofenceRadiusM,
+      lecturerGpsAccuracyM: Math.round(gpsAccuracyM || 0),
       timeLimitMinutes,
       level: level ? parseInt(level, 10) : null,
       qrPayload: `session_${Date.now()}`,
