@@ -12,7 +12,7 @@ function combineFingerprint(fingerprint, ipAddress) {
 }
 
 async function sign(studentId, data) {
-  const { sessionId, latitude, longitude, deviceId, fingerprint, ipAddress } = data;
+  const { sessionId, latitude, longitude, gpsAccuracyM, deviceId, fingerprint, ipAddress } = data;
 
   const session = await prisma.session.findUnique({ where: { id: sessionId } });
   if (!session) {
